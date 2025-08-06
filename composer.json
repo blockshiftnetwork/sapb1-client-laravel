@@ -1,17 +1,17 @@
 {
-    "name": ":vendor_slug/:package_slug",
-    "description": ":package_description",
+    "name": "blockshiftnetwork/sapb1-client",
+    "description": "A robust, production-grade Laravel package for SAP Business One HTTP integration, supporting both OData and custom (non-OData) SAP Service Layer (SML) endpoints.",
     "keywords": [
-        ":vendor_name",
+        "BlockshiftNetwork",
         "laravel",
-        ":package_slug"
+        "sapb1-client"
     ],
-    "homepage": "https://github.com/:vendor_slug/:package_slug",
+    "homepage": "https://github.com/blockshiftnetwork/sapb1-client",
     "license": "MIT",
     "authors": [
         {
-            "name": ":author_name",
-            "email": "author@domain.com",
+            "name": "Blockshift Network",
+            "email": "info@blockshift.network",
             "role": "Developer"
         }
     ],
@@ -35,13 +35,13 @@
     },
     "autoload": {
         "psr-4": {
-            "VendorName\\Skeleton\\": "src/",
-            "VendorName\\Skeleton\\Database\\Factories\\": "database/factories/"
+            "BlockshiftNetwork\\SapB1Client\\": "src/",
+            "BlockshiftNetwork\\SapB1Client\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "VendorName\\Skeleton\\Tests\\": "tests/",
+            "BlockshiftNetwork\\SapB1Client\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
@@ -63,10 +63,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "VendorName\\Skeleton\\SkeletonServiceProvider"
+                "BlockshiftNetwork\\SapB1Client\\SapB1ServiceProvider"
             ],
             "aliases": {
-                "Skeleton": "VendorName\\Skeleton\\Facades\\Skeleton"
+                "SapBOne": "BlockshiftNetwork\\SapB1Client\\Facades\\SapBOne"
             }
         }
     },
