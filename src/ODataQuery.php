@@ -20,24 +20,30 @@ use InvalidArgumentException;
 class ODataQuery
 {
     private $select = [];
+
     private $filter = [];
+
     private $orderBy = [];
+
     private $top;
+
     private $skip;
 
     public function select($fields)
     {
         $this->select = is_array($fields) ? $fields : func_get_args();
+
         return $this;
     }
 
     public function where($field, $operator = null, $value = null)
     {
         if ($field instanceof Filter) {
-            if (!empty($this->filter)) {
+            if (! empty($this->filter)) {
                 $field->setOperator('and');
             }
             $this->filter[] = $field;
+
             return $this;
         }
 
@@ -48,7 +54,7 @@ class ODataQuery
 
         $filter = $this->createFilter($field, $operator, $value);
 
-        if (!empty($this->filter)) {
+        if (! empty($this->filter)) {
             $filter->setOperator('and');
         }
 
@@ -66,6 +72,7 @@ class ODataQuery
                 $field->setOperator('or');
             }
             $this->filter[] = $field;
+
             return $this;
         }
 
@@ -81,7 +88,7 @@ class ODataQuery
         } else {
             $filter->setOperator('or');
         }
-        
+
         $this->filter[] = $filter;
 
         return $this;
@@ -108,52 +115,57 @@ class ODataQuery
             'in' => InArray::class,
             'notin' => NotInArray::class,
         ];
-        
+
         $operator = strtolower($operator);
-        
+
         if ($operator === 'between') {
-            if (!is_array($value) || count($value) !== 2) {
+            if (! is_array($value) || count($value) !== 2) {
                 throw new InvalidArgumentException('The value for "between" operator must be an array of two elements.');
             }
+
             return new Between($field, $value[0], $value[1]);
         }
 
-        if (!isset($operatorMap[$operator])) {
+        if (! isset($operatorMap[$operator])) {
             throw new InvalidArgumentException("Unsupported operator '{$operator}'");
         }
 
         $filterClass = $operatorMap[$operator];
+
         return new $filterClass($field, $value);
     }
 
     public function orderBy($field, $direction = 'asc')
     {
-        $this->orderBy[] = $field . ' ' . $direction;
+        $this->orderBy[] = $field.' '.$direction;
+
         return $this;
     }
 
     public function top($number)
     {
         $this->top = $number;
+
         return $this;
     }
 
     public function skip($number)
     {
         $this->skip = $number;
+
         return $this;
     }
 
     public function toArray()
     {
         $query = [];
-        if (!empty($this->select)) {
+        if (! empty($this->select)) {
             $query['$select'] = implode(',', $this->select);
         }
-        if (!empty($this->filter)) {
+        if (! empty($this->filter)) {
             $query['$filter'] = $this->compileFilters();
         }
-        if (!empty($this->orderBy)) {
+        if (! empty($this->orderBy)) {
             $query['$orderby'] = implode(',', $this->orderBy);
         }
         if (isset($this->top)) {
@@ -162,6 +174,7 @@ class ODataQuery
         if (isset($this->skip)) {
             $query['$skip'] = $this->skip;
         }
+
         return $query;
     }
 
@@ -170,10 +183,11 @@ class ODataQuery
         $filterString = '';
         foreach ($this->filter as $index => $filter) {
             if ($index > 0) {
-                $filterString .= ' ' . ($filter->getOperator() ?? 'and') . ' ';
+                $filterString .= ' '.($filter->getOperator() ?? 'and').' ';
             }
             $filterString .= $filter->execute();
         }
+
         return $filterString;
     }
 }
