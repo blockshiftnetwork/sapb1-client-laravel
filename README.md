@@ -51,7 +51,48 @@ $response = SapBOne::odataQuery('Items', [
 $items = $response->json('value');
 ```
 
-### B. Custom SML Request Example
+### B. Advanced OData Queries with the Query Builder
+
+For more complex scenarios, you can use the `ODataQuery` builder to construct your queries in a more readable and maintainable way.
+
+```php
+use BlockshiftNetwork\SapB1Client\Facades\SapBOne;
+use BlockshiftNetwork\SapB1Client\ODataQuery;
+use BlockshiftNetwork\SapB1Client\Filters\Equal;
+use BlockshiftNetwork\SapB1Client\Filters\Contains;
+
+$query = (new ODataQuery())
+    ->select('CardCode', 'CardName', 'Balance')
+    ->where(new Equal('CardType', 'cCustomer'))
+    ->where(new Contains('CardName', 'Parameter'))
+    ->orderBy('CardName', 'desc')
+    ->top(10)
+    ->skip(5);
+
+$response = SapBOne::odataQuery('BusinessPartners', $query);
+
+$customers = $response->json('value');
+```
+
+#### Available Filters
+
+The query builder supports a wide range of filters:
+
+- `Between(string $field, mixed $fromValue, mixed $toValue)`
+- `Contains(string $field, string $value)`
+- `EndsWith(string $field, string $value)`
+- `Equal(string $field, mixed $value)`
+- `InArray(string $field, array $collection)`
+- `LessThan(string $field, mixed $value)`
+- `LessThanEqual(string $field, mixed $value)`
+- `MoreThan(string $field, mixed $value)`
+- `MoreThanEqual(string $field, mixed $value)`
+- `NotEqual(string $field, mixed $value)`
+- `NotInArray(string $field, array $collection)`
+- `Raw(string $rawFilter)`
+- `StartsWith(string $field, string $value)`
+
+### C. Custom SML Request Example
 
 ```php
 // Custom SML endpoint, custom headers
@@ -63,7 +104,21 @@ $response = SapBOne::withHeaders(['X-Company-Context' => 'VENEZUELA'])
 $data = $response->json();
 ```
 
-### C. POST, PATCH, DELETE Requests
+### D. File Uploads and Custom Requests
+
+For scenarios like file uploads or other complex requests that are not covered by the standard methods, you can use the `sendRequestWithCallback` method. This gives you direct access to the configured HTTP client instance while still benefiting from the automatic re-login logic.
+
+```php
+use BlockshiftNetwork\SapB1Client\Facades\SapBOne;
+
+$response = SapBOne::sendRequestWithCallback(function ($httpClient) {
+    return $httpClient
+        ->attach('my_file', file_get_contents('/path/to/file.pdf'), 'file.pdf')
+        ->post('Attachments2');
+});
+```
+
+### E. POST, PATCH, DELETE Requests
 
 ```php
 // POST example
@@ -81,7 +136,7 @@ $update = SapBOne::patch("BusinessPartners('C2024')", $body);
 $delete = SapBOne::delete("BusinessPartners('C2024')");
 ```
 
-### D. Explicit Logout
+### F. Explicit Logout
 
 ```php
 SapBOne::logout();

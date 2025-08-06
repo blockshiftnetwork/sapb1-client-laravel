@@ -109,8 +109,12 @@ class SapB1Client
         return $this->sendRequest('delete', $endpoint);
     }
 
-    public function odataQuery(string $entity, array $options = []): Response
+    public function odataQuery(string $entity, array|ODataQuery $options = []): Response
     {
+        if ($options instanceof ODataQuery) {
+            $options = $options->toArray();
+        }
+
         return $this->get($entity, $options);
     }
 
