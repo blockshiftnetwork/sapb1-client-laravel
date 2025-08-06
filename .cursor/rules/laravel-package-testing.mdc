@@ -1,0 +1,13 @@
+---
+globs: tests/**/*.php, phpunit.xml.dist
+---
+
+# Testing in this Laravel Package
+
+Tests for this package are located in the `tests/` directory and use PHPUnit and Pest.
+
+- **Base Test Case**: All tests should extend `[tests/TestCase.php](mdc:tests/TestCase.php)`. This class sets up the necessary Laravel application environment for the package to be tested correctly.
+
+- **Example Test**: For an example of how to write tests for this package, see `[tests/SapB1ClientTest.php](mdc:tests/SapB1ClientTest.php)`.
+
+- **Running Tests**: Tests can be run using the `pest` or `phpunit` command from the root of the package.

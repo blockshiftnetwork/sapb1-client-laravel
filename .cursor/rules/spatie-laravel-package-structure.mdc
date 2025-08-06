@@ -1,0 +1,19 @@
+---
+alwaysApply: true
+---
+
+# Spatie Laravel Package Structure
+
+This project is a Laravel package based on the Spatie package skeleton. Here are the key files and directories:
+
+- **Service Provider**: The main service provider is `[src/SapB1ServiceProvider.php](mdc:src/SapB1ServiceProvider.php)`. This file registers the package's services into the Laravel application. You can find bindings, commands, and other service registrations here.
+
+- **Configuration**: The package's configuration is located in `[config/sapb1-client.php](mdc:config/sapb1-client.php)`. This file can be published to the application's `config` directory.
+
+- **Facades**: The package uses facades to provide a simple, static interface to services registered in the service container. The main facade is `[src/Facades/SapBOne.php](mdc:src/Facades/SapBOne.php)`.
+
+- **Source Code**: The main logic of the package is in the `src/` directory.
+
+- **Tests**: Tests are located in the `tests/` directory. The base test case is `[tests/TestCase.php](mdc:tests/TestCase.php)`, which sets up the Laravel application for testing. The main test file for the client is `[tests/SapB1ClientTest.php](mdc:tests/SapB1ClientTest.php)`.
+
+- **Composer**: Dependencies and autoloading are managed in `[composer.json](mdc:composer.json)`.
