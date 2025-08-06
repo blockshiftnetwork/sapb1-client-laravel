@@ -21,7 +21,7 @@ return [
     | - `cache_ttl`: The session cache Time To Live in seconds.
     |                Defaults to 1800 seconds (30 minutes).
     */
-    'server'   => env('SAPB1_SERVER'),
+    'server' => env('SAPB1_SERVER'),
     'database' => env('SAPB1_DATABASE'),
     'username' => env('SAPB1_USERNAME'),
     'password' => env('SAPB1_PASSWORD'),

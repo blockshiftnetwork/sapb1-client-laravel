@@ -16,4 +16,3 @@ class Raw extends Filter
         return $this->string;
     }
 }
-

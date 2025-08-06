@@ -5,7 +5,9 @@ namespace BlockshiftNetwork\SapB1Client\Filters;
 class Between extends Filter
 {
     private $field;
+
     private $fromValue;
+
     private $toValue;
 
     public function __construct($field, $fromValue, $toValue)
@@ -17,7 +19,6 @@ class Between extends Filter
 
     public function execute()
     {
-        return '(' . $this->field . ' ge ' . $this->escape($this->fromValue) . ' and ' . $this->field . ' le ' . $this->escape($this->toValue) . ')';
+        return '('.$this->field.' ge '.$this->escape($this->fromValue).' and '.$this->field.' le '.$this->escape($this->toValue).')';
     }
 }
-

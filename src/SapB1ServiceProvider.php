@@ -2,10 +2,9 @@
 
 namespace BlockshiftNetwork\SapB1Client;
 
+use Illuminate\Support\Facades\Http;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Illuminate\Support\Facades\Http;
-use BlockshiftNetwork\SapB1Client\SapB1Client;
 
 class SapB1ServiceProvider extends PackageServiceProvider
 {

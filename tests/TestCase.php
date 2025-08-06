@@ -2,8 +2,8 @@
 
 namespace BlockshiftNetwork\SapB1Client\Tests;
 
-use Orchestra\Testbench\TestCase as Orchestra;
 use BlockshiftNetwork\SapB1Client\SapB1ServiceProvider;
+use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
 {

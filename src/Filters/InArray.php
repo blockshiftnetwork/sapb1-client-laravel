@@ -5,6 +5,7 @@ namespace BlockshiftNetwork\SapB1Client\Filters;
 class InArray extends Filter
 {
     private $field;
+
     private $collection;
 
     public function __construct($field, array $collection)
@@ -19,10 +20,9 @@ class InArray extends Filter
 
         foreach ($this->collection as $idx => $value) {
             $op = ($idx < count($this->collection) - 1) ? ' or ' : '';
-            $group .= $this->field . ' eq ' . $this->escape($value) . $op;
+            $group .= $this->field.' eq '.$this->escape($value).$op;
         }
 
-        return '(' . $group . ')';
+        return '('.$group.')';
     }
 }
-

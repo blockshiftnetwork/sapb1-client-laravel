@@ -5,6 +5,7 @@ namespace BlockshiftNetwork\SapB1Client\Filters;
 class EndsWith extends Filter
 {
     private $field;
+
     private $value;
 
     public function __construct($field, $value)
@@ -15,7 +16,6 @@ class EndsWith extends Filter
 
     public function execute()
     {
-        return 'endswith(' . $this->field . ',' . $this->escape($this->value) . ')';
+        return 'endswith('.$this->field.','.$this->escape($this->value).')';
     }
 }
-

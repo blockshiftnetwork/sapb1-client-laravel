@@ -2,17 +2,20 @@
 
 namespace BlockshiftNetwork\SapB1Client;
 
-use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Http\Client\Response;
 use Exception;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class SapB1Client
 {
     protected PendingRequest $http;
+
     protected array $config;
+
     protected ?string $sessionCookie = null;
+
     protected array $headers = [];
 
     public function __construct(array $config = [])
@@ -32,7 +35,7 @@ class SapB1Client
 
     protected function getSessionKey(): string
     {
-        return 'sapb1-session:' . md5($this->config['server'] . $this->config['database'] . $this->config['username']);
+        return 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
     }
 
     protected function login(): void
@@ -41,18 +44,19 @@ class SapB1Client
 
         if (Cache::has($sessionKey)) {
             $this->sessionCookie = Cache::get($sessionKey);
+
             return;
         }
 
         $response = $this->http->retry(3, 100)
-        ->post('Login', [
-            'CompanyDB' => $this->config['database'],
-            'UserName' => $this->config['username'],
-            'Password' => $this->config['password'],
-        ]);
+            ->post('Login', [
+                'CompanyDB' => $this->config['database'],
+                'UserName' => $this->config['username'],
+                'Password' => $this->config['password'],
+            ]);
 
         if ($response->failed()) {
-            throw new Exception("SAP B1 Login Failed: " . $response->body());
+            throw new Exception('SAP B1 Login Failed: '.$response->body());
         }
 
         $this->sessionCookie = $response->header('Set-Cookie');
@@ -72,6 +76,7 @@ class SapB1Client
     public function withHeaders(array $headers): self
     {
         $this->headers = array_merge($this->headers, $headers);
+
         return $this;
     }
 

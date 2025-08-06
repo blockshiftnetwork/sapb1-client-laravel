@@ -5,6 +5,7 @@ namespace BlockshiftNetwork\SapB1Client\Filters;
 class Equal extends Filter
 {
     private $field;
+
     private $value;
 
     public function __construct($field, $value)
@@ -15,7 +16,6 @@ class Equal extends Filter
 
     public function execute()
     {
-        return $this->field . ' eq ' . $this->escape($this->value);
+        return $this->field.' eq '.$this->escape($this->value);
     }
 }
-

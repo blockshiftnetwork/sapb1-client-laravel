@@ -5,6 +5,7 @@ namespace BlockshiftNetwork\SapB1Client\Filters;
 class StartsWith extends Filter
 {
     private $field;
+
     private $value;
 
     public function __construct($field, $value)
@@ -15,7 +16,6 @@ class StartsWith extends Filter
 
     public function execute()
     {
-        return 'startswith(' . $this->field . ',' . $this->escape($this->value) . ')';
+        return 'startswith('.$this->field.','.$this->escape($this->value).')';
     }
 }
-

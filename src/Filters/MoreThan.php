@@ -5,6 +5,7 @@ namespace BlockshiftNetwork\SapB1Client\Filters;
 class MoreThan extends Filter
 {
     private $field;
+
     private $value;
 
     public function __construct($field, $value)
@@ -15,7 +16,6 @@ class MoreThan extends Filter
 
     public function execute()
     {
-        return $this->field . ' gt ' . $this->escape($this->value);
+        return $this->field.' gt '.$this->escape($this->value);
     }
 }
-

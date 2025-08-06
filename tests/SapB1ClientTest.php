@@ -2,9 +2,9 @@
 
 namespace BlockshiftNetwork\SapB1Client\Tests;
 
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Cache;
 use Exception;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class SapB1ClientTest extends TestCase
 {
@@ -38,12 +38,12 @@ class SapB1ClientTest extends TestCase
     /** @test */
     public function it_can_login_and_cache_the_session()
     {
-        $this->assertFalse(Cache::has('sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+        $this->assertFalse(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
 
         Http::SapBOne([]);
 
-        $this->assertTrue(Cache::has('sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
-        $this->assertEquals('B1SESSION=mock_session_cookie;', Cache::get('sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+        $this->assertTrue(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+        $this->assertEquals('B1SESSION=mock_session_cookie;', Cache::get('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
     }
 
     /** @test */
@@ -53,7 +53,7 @@ class SapB1ClientTest extends TestCase
         Cache::flush(); // Flush the cache to force a new login
 
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage("SAP B1 Login Failed: Login failed");
+        $this->expectExceptionMessage('SAP B1 Login Failed: Login failed');
 
         Http::SapBOne([]); // This login should fail
     }
@@ -118,7 +118,7 @@ class SapB1ClientTest extends TestCase
         });
 
         Http::assertSent(function ($request) {
-            return $request->url() === 'https://sap-server/b1s/v1/Items' && !$request->hasHeader('X-Custom-Header');
+            return $request->url() === 'https://sap-server/b1s/v1/Items' && ! $request->hasHeader('X-Custom-Header');
         });
     }
 
@@ -126,10 +126,10 @@ class SapB1ClientTest extends TestCase
     public function it_can_logout_and_clear_the_session()
     {
         Http::SapBOne([]);
-        $this->assertTrue(Cache::has('sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+        $this->assertTrue(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
 
         Http::SapBOne([])->logout();
 
-        $this->assertFalse(Cache::has('sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+        $this->assertFalse(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
     }
 }

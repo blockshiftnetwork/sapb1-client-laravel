@@ -5,6 +5,7 @@ namespace BlockshiftNetwork\SapB1Client\Filters;
 class NotEqual extends Filter
 {
     private $field;
+
     private $value;
 
     public function __construct($field, $value)
@@ -15,7 +16,6 @@ class NotEqual extends Filter
 
     public function execute()
     {
-        return $this->field . ' ne ' . $this->escape($this->value);
+        return $this->field.' ne '.$this->escape($this->value);
     }
 }
-
