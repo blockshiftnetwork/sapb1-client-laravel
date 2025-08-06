@@ -53,44 +53,47 @@ $items = $response->json('value');
 
 ### B. Advanced OData Queries with the Query Builder
 
-For more complex scenarios, you can use the `ODataQuery` builder to construct your queries in a more readable and maintainable way.
+For more complex scenarios, you can use the `ODataQuery` builder to construct your queries in a readable and maintainable way, very similar to Laravel's Eloquent.
 
 ```php
 use BlockshiftNetwork\SapB1Client\Facades\SapBOne;
 use BlockshiftNetwork\SapB1Client\ODataQuery;
-use BlockshiftNetwork\SapB1Client\Filters\Equal;
-use BlockshiftNetwork\SapB1Client\Filters\Contains;
 
 $query = (new ODataQuery())
     ->select('CardCode', 'CardName', 'Balance')
-    ->where(new Equal('CardType', 'cCustomer'))
-    ->where(new Contains('CardName', 'Parameter'))
+    ->where('CardType', '=', 'cCustomer') // ->where('CardType', 'cCustomer') also works
+    ->orWhere('CardName', 'contains', 'Acme Inc.')
+    ->where('Balance', '>', 0)
+    ->where('CreateDate', 'between', ['2023-01-01', '2023-12-31'])
     ->orderBy('CardName', 'desc')
-    ->top(10)
-    ->skip(5);
+    ->top(50)
+    ->skip(10);
 
 $response = SapBOne::odataQuery('BusinessPartners', $query);
 
 $customers = $response->json('value');
 ```
 
-#### Available Filters
+#### Supported Operators
 
-The query builder supports a wide range of filters:
+The `where` and `orWhere` methods support a variety of operators:
 
-- `Between(string $field, mixed $fromValue, mixed $toValue)`
-- `Contains(string $field, string $value)`
-- `EndsWith(string $field, string $value)`
-- `Equal(string $field, mixed $value)`
-- `InArray(string $field, array $collection)`
-- `LessThan(string $field, mixed $value)`
-- `LessThanEqual(string $field, mixed $value)`
-- `MoreThan(string $field, mixed $value)`
-- `MoreThanEqual(string $field, mixed $value)`
-- `NotEqual(string $field, mixed $value)`
-- `NotInArray(string $field, array $collection)`
-- `Raw(string $rawFilter)`
-- `StartsWith(string $field, string $value)`
+| Operator     | Description           | Example                                                       |
+| ------------ | --------------------- | ------------------------------------------------------------- |
+| `=`, `eq`    | Equal                 | `->where('CardType', '=', 'cCustomer')`                       |
+| `!=`, `ne`   | Not Equal             | `->where('Status', '!=', 'Inactive')`                         |
+| `>`, `gt`    | Greater Than          | `->where('Balance', '>', 1000)`                               |
+| `>=`, `ge`   | Greater Than or Equal | `->where('Stock', '>=', 10)`                                  |
+| `<`, `lt`    | Less Than             | `->where('DocTotal', '<', 500)`                               |
+| `<=`, `le`   | Less Than or Equal    | `->where('Discount', '<=', 15)`                               |
+| `contains`   | String Contains       | `->where('CardName', 'contains', 'Shop')`                     |
+| `startswith` | String Starts With    | `->where('ItemCode', 'startswith', 'A')`                      |
+| `endswith`   | String Ends With      | `->where('Address', 'endswith', 'USA')`                       |
+| `in`         | In Array              | `->where('GroupCode', 'in', [1, 2, 5])`                       |
+| `notin`      | Not In Array          | `->where('Country', 'notin', ['US', 'CA'])`                   |
+| `between`    | Between two values    | `->where('DocDate', 'between', ['2024-01-01', '2024-01-31'])` |
+
+For very specific or complex filters that are not covered by the operators above, you can still pass a `Filter` instance directly: `->where(new Raw("substring(CardName, 1, 3) eq 'ABC'"))`
 
 ### C. Custom SML Request Example
 
