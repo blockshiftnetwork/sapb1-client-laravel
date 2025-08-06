@@ -27,12 +27,12 @@ beforeEach(function () {
 });
 
 it('can login and cache the session', function () {
-    $this->assertFalse(Cache::has('sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+    $this->assertFalse(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
 
     Http::SapBOne([]);
 
-    $this->assertTrue(Cache::has('sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
-    $this->assertEquals('B1SESSION=mock_session_cookie;', Cache::get('sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+    $this->assertTrue(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+    $this->assertEquals('B1SESSION=mock_session_cookie;', Cache::get('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
 });
 
 it('throws an exception on failed login', function () {
@@ -97,11 +97,11 @@ it('custom headers are only applied to the next request', function () {
 
 it('can logout and clear the session', function () {
     Http::SapBOne([]);
-    $this->assertTrue(Cache::has('sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+    $this->assertTrue(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
 
     Http::SapBOne([])->logout();
 
-    $this->assertFalse(Cache::has('sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+    $this->assertFalse(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
 });
 
 it('retries the request on failure', function () {
