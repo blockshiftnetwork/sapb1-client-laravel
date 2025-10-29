@@ -20,11 +20,14 @@ class SapB1Client
 
     public function __construct(array $config = [])
     {
-        $this->config = array_merge(config('sapb1-client'), $config);
+        $this->config = array_merge(config('sapb1-client', []), $config);
+
+        // Validar configuración antes de hacer cualquier cosa
+        $this->validateConfig();
 
         $this->http = Http::withOptions([
             'base_uri' => $this->config['server'],
-            'verify' => $this->config['verify_ssl'],
+            'verify' => $this->config['verify_ssl'] ?? true,
         ])->withHeaders([
             'Accept' => 'application/json',
             'Content-Type' => 'application/json',
@@ -33,9 +36,25 @@ class SapB1Client
         $this->login();
     }
 
+    /**
+     * Validate that required configuration values are present.
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function validateConfig(): void
+    {
+        $required = ['server', 'database', 'username', 'password'];
+
+        foreach ($required as $key) {
+            if (empty($this->config[$key])) {
+                throw new \InvalidArgumentException("Missing required configuration: {$key}");
+            }
+        }
+    }
+
     protected function getSessionKey(): string
     {
-        return 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
+        return 'sapb1-session:' . md5($this->config['server'] . $this->config['database'] . $this->config['username']);
     }
 
     protected function login(): void
@@ -56,7 +75,7 @@ class SapB1Client
             ]);
 
         if ($response->failed()) {
-            throw new Exception('SAP B1 Login Failed: '.$response->body());
+            throw new Exception('SAP B1 Login Failed: ' . $response->body());
         }
 
         $this->sessionCookie = $response->header('Set-Cookie');
@@ -82,9 +101,17 @@ class SapB1Client
 
     private function sendRequest(string $method, string $endpoint, array $data = []): Response
     {
-        $request = $this->http->withHeaders(array_merge(
-            ['Cookie' => $this->sessionCookie],
-            $this->headers,
+        // Crear una nueva instancia para evitar acumulación de headers
+        $request = Http::withOptions([
+            'base_uri' => $this->config['server'],
+            'verify' => $this->config['verify_ssl'],
+        ])->withHeaders(array_merge(
+            [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+                'Cookie' => $this->sessionCookie,
+            ],
+            $this->headers
         ));
 
         $this->headers = [];
@@ -125,12 +152,15 @@ class SapB1Client
 
     public function sendRequestWithCallback(callable $callback): Response
     {
-        $request = $this->http->withHeaders(array_merge(
-            ['Cookie' => $this->sessionCookie],
-            $this->headers
-        ));
-
+        // Usar this->http para que Http::fake() funcione correctamente en tests
+        // pero agregamos headers de manera temporal
+        $customHeaders = $this->headers;
         $this->headers = [];
+
+        // Crear un request temporal con todos los headers necesarios
+        $request = $this->http
+            ->withHeaders(['Cookie' => $this->sessionCookie])
+            ->withHeaders($customHeaders);
 
         $response = $callback($request);
 

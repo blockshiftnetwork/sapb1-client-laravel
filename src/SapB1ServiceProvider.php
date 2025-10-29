@@ -15,9 +15,16 @@ class SapB1ServiceProvider extends PackageServiceProvider
             ->hasConfigFile();
     }
 
+    public function registeringPackage(): void
+    {
+        $this->app->singleton(SapB1Client::class, function ($app) {
+            return new SapB1Client();
+        });
+    }
+
     public function bootingPackage()
     {
-        Http::macro('SapBOne', function (array $config) {
+        Http::macro('SapBOne', function (array $config = []) {
             return new SapB1Client($config);
         });
     }
