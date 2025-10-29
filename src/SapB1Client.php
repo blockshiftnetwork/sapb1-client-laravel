@@ -4,6 +4,7 @@ namespace BlockshiftNetwork\SapB1Client;
 
 use Exception;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -54,7 +55,7 @@ class SapB1Client
 
     protected function getSessionKey(): string
     {
-        return 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
+        return 'sapb1-session:' . md5($this->config['server'] . $this->config['database'] . $this->config['username']);
     }
 
     protected function login(): void
@@ -75,7 +76,7 @@ class SapB1Client
             ]);
 
         if ($response->failed()) {
-            throw new Exception('SAP B1 Login Failed: '.$response->body());
+            throw new Exception('SAP B1 Login Failed: ' . $response->body());
         }
 
         $this->sessionCookie = $response->header('Set-Cookie');
@@ -178,5 +179,83 @@ class SapB1Client
         $response = $callback($request);
 
         return $response;
+    }
+
+    /**
+     * Execute multiple requests concurrently using Laravel's HTTP pool.
+     *
+     * @param  callable  $callback  Callback that receives a configured pool helper
+     * @return array<int|string, Response>
+     *
+     * @example
+     * ```php
+     * $responses = SapBOne::pool(function ($pool) {
+     *     return [
+     *         $pool->as('items')->get('Items', ['$top' => 5]),
+     *         $pool->as('partners')->get('BusinessPartners', ['$top' => 5]),
+     *         $pool->as('orders')->get('Orders', ['$top' => 5]),
+     *     ];
+     * });
+     *
+     * $items = $responses['items']->json('value');
+     * $partners = $responses['partners']->json('value');
+     * ```
+     */
+    public function pool(callable $callback): array
+    {
+        if (empty($this->sessionCookie)) {
+            $this->login();
+        }
+
+        $sessionCookie = $this->sessionCookie;
+        $config = $this->config;
+
+        return Http::pool(function (Pool $pool) use ($callback, $sessionCookie, $config) {
+            // Crear un helper simple que configura cada request del pool
+            $poolHelper = new class($pool, $sessionCookie, $config) {
+                public function __construct(
+                    private Pool $pool,
+                    private string $sessionCookie,
+                    private array $config,
+                    private ?string $currentKey = null
+                ) {}
+
+                private function configureRequest($poolOrRequest)
+                {
+                    return $poolOrRequest
+                        ->withOptions([
+                            'base_uri' => $this->config['server'],
+                            'verify' => $this->config['verify_ssl'],
+                        ])
+                        ->withHeaders([
+                            'Accept' => 'application/json',
+                            'Content-Type' => 'application/json',
+                            'Cookie' => $this->sessionCookie,
+                        ]);
+                }
+
+                public function as(string $key): self
+                {
+                    $this->currentKey = $key;
+                    return $this;
+                }
+
+                public function __call(string $method, array $arguments)
+                {
+                    // Obtener el pool base (con o sin key)
+                    $base = $this->currentKey !== null
+                        ? $this->pool->as($this->currentKey)
+                        : $this->pool;
+
+                    // Limpiar el key
+                    $this->currentKey = null;
+
+                    // Configurar y ejecutar el método
+                    return $this->configureRequest($base)->$method(...$arguments);
+                }
+            };
+
+            return $callback($poolHelper);
+        });
     }
 }

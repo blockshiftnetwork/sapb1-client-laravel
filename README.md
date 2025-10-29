@@ -139,7 +139,42 @@ $update = SapBOne::patch("BusinessPartners('C2024')", $body);
 $delete = SapBOne::delete("BusinessPartners('C2024')");
 ```
 
-### F. Explicit Logout
+### F. Concurrent Requests with Pool
+
+Execute multiple requests concurrently for better performance:
+
+```php
+use BlockshiftNetwork\SapB1Client\Facades\SapBOne;
+
+$responses = SapBOne::pool(function ($pool) {
+    return [
+        $pool->as('items')->get('Items', ['$top' => 10]),
+        $pool->as('partners')->get('BusinessPartners', ['$top' => 10]),
+        $pool->as('warehouses')->get('Warehouses'),
+        $pool->as('orders')->get('Orders', ['$top' => 5]),
+    ];
+});
+
+// Access responses by their keys
+$items = $responses['items']->json('value');
+$partners = $responses['partners']->json('value');
+$warehouses = $responses['warehouses']->json('value');
+$orders = $responses['orders']->json('value');
+```
+
+You can also use POST, PUT, PATCH, DELETE in pool:
+
+```php
+$responses = SapBOne::pool(function ($pool) {
+    return [
+        $pool->as('create')->post('BusinessPartners', ['CardCode' => 'C001', 'CardName' => 'New Customer']),
+        $pool->as('update')->patch("Items('A001')", ['ItemName' => 'Updated Item']),
+        $pool->as('fetch')->get('Orders', ['$top' => 1]),
+    ];
+});
+```
+
+### G. Explicit Logout
 
 ```php
 SapBOne::logout();

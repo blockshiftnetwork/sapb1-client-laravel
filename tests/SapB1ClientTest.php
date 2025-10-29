@@ -256,3 +256,56 @@ it('http macro can accept custom config', function () {
 
     expect($customClient)->toBeInstanceOf(SapB1Client::class);
 });
+
+it('can make concurrent requests with pool', function () {
+    $client = new SapB1Client();
+
+    $responses = $client->pool(function ($pool) {
+        return [
+            $pool->as('items')->get('Items', ['$top' => 2]),
+            $pool->as('partners')->get('BusinessPartners', ['$top' => 1]),
+        ];
+    });
+
+    expect($responses)->toHaveKey('items');
+    expect($responses)->toHaveKey('partners');
+    expect($responses['items']->successful())->toBeTrue();
+    expect($responses['partners']->successful())->toBeTrue();
+    expect($responses['items']->json('value'))->toHaveCount(2);
+});
+
+it('facade can make concurrent requests with pool', function () {
+    $responses = SapBOne::pool(function ($pool) {
+        return [
+            $pool->as('items')->get('Items', ['$top' => 2]),
+            $pool->as('partners')->get('BusinessPartners'),
+        ];
+    });
+
+    expect($responses)->toHaveKey('items');
+    expect($responses)->toHaveKey('partners');
+    expect($responses['items']->successful())->toBeTrue();
+    expect($responses['partners']->successful())->toBeTrue();
+});
+
+it('pool supports all http methods', function () {
+    Http::fake([
+        '*Login*' => Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']),
+        '*Items*' => Http::response(['value' => []], 200),
+        '*BusinessPartners*' => Http::response(['CardCode' => 'C001'], 200),
+    ]);
+
+    $client = new SapB1Client();
+
+    $responses = $client->pool(function ($pool) {
+        return [
+            $pool->as('get')->get('Items'),
+            $pool->as('post')->post('BusinessPartners', ['CardCode' => 'C001']),
+        ];
+    });
+
+    expect($responses)->toHaveKey('get');
+    expect($responses)->toHaveKey('post');
+    expect($responses['get']->successful())->toBeTrue();
+    expect($responses['post']->successful())->toBeTrue();
+});
