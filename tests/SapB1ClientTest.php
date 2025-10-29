@@ -258,7 +258,7 @@ it('http macro can accept custom config', function () {
 });
 
 it('can make concurrent requests with pool', function () {
-    $client = new SapB1Client();
+    $client = new SapB1Client;
 
     $responses = $client->pool(function ($pool) {
         return [
@@ -295,7 +295,7 @@ it('pool supports all http methods', function () {
         '*BusinessPartners*' => Http::response(['CardCode' => 'C001'], 200),
     ]);
 
-    $client = new SapB1Client();
+    $client = new SapB1Client;
 
     $responses = $client->pool(function ($pool) {
         return [

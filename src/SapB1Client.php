@@ -55,7 +55,7 @@ class SapB1Client
 
     protected function getSessionKey(): string
     {
-        return 'sapb1-session:' . md5($this->config['server'] . $this->config['database'] . $this->config['username']);
+        return 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
     }
 
     protected function login(): void
@@ -76,7 +76,7 @@ class SapB1Client
             ]);
 
         if ($response->failed()) {
-            throw new Exception('SAP B1 Login Failed: ' . $response->body());
+            throw new Exception('SAP B1 Login Failed: '.$response->body());
         }
 
         $this->sessionCookie = $response->header('Set-Cookie');
@@ -212,7 +212,8 @@ class SapB1Client
 
         return Http::pool(function (Pool $pool) use ($callback, $sessionCookie, $config) {
             // Crear un helper simple que configura cada request del pool
-            $poolHelper = new class($pool, $sessionCookie, $config) {
+            $poolHelper = new class($pool, $sessionCookie, $config)
+            {
                 public function __construct(
                     private Pool $pool,
                     private string $sessionCookie,
@@ -237,6 +238,7 @@ class SapB1Client
                 public function as(string $key): self
                 {
                     $this->currentKey = $key;
+
                     return $this;
                 }
 
