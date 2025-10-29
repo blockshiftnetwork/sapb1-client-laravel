@@ -16,6 +16,6 @@ class StartsWith extends Filter
 
     public function execute()
     {
-        return 'startswith(' . $this->field . ', ' . $this->escape($this->value) . ')';
+        return 'startswith('.$this->field.', '.$this->escape($this->value).')';
     }
 }

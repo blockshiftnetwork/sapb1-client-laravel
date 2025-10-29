@@ -33,11 +33,11 @@ beforeEach(function () {
 });
 
 it('can login and cache the session', function () {
-    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager');
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager');
 
     expect(Cache::has($sessionKey))->toBeFalse();
 
-    $client = new SapB1Client();
+    $client = new SapB1Client;
 
     expect(Cache::has($sessionKey))->toBeTrue();
     expect(Cache::get($sessionKey))->toContain('B1SESSION=');
@@ -46,7 +46,7 @@ it('can login and cache the session', function () {
 it('validates required configuration', function () {
     Cache::flush();
 
-    expect(fn() => new SapB1Client([
+    expect(fn () => new SapB1Client([
         'server' => '',
         'database' => '',
         'username' => '',
@@ -55,7 +55,7 @@ it('validates required configuration', function () {
 });
 
 it('can make get requests', function () {
-    $client = new SapB1Client();
+    $client = new SapB1Client;
     $response = $client->get('Items');
 
     expect($response->successful())->toBeTrue();
@@ -70,7 +70,7 @@ it('can use facade to make get requests', function () {
 });
 
 it('can make post requests', function () {
-    $client = new SapB1Client();
+    $client = new SapB1Client;
     $response = $client->post('BusinessPartners', ['CardCode' => 'C2024']);
 
     expect($response->successful())->toBeTrue();
@@ -78,7 +78,7 @@ it('can make post requests', function () {
 });
 
 it('can make put requests', function () {
-    $client = new SapB1Client();
+    $client = new SapB1Client;
 
     Http::fake([
         '*Login*' => Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']),
@@ -91,21 +91,21 @@ it('can make put requests', function () {
 });
 
 it('can make patch requests', function () {
-    $client = new SapB1Client();
+    $client = new SapB1Client;
     $response = $client->patch("BusinessPartners('C2024')", ['CardName' => 'New Name']);
 
     expect($response->successful())->toBeTrue();
 });
 
 it('can make delete requests', function () {
-    $client = new SapB1Client();
+    $client = new SapB1Client;
     $response = $client->delete("BusinessPartners('C2024')");
 
     expect($response->successful())->toBeTrue();
 });
 
 it('can make odata queries with array', function () {
-    $client = new SapB1Client();
+    $client = new SapB1Client;
     $response = $client->odataQuery('Items', ['$top' => 2]);
 
     expect($response->successful())->toBeTrue();
@@ -113,12 +113,12 @@ it('can make odata queries with array', function () {
 });
 
 it('can make odata queries with query builder', function () {
-    $query = (new ODataQuery())
+    $query = (new ODataQuery)
         ->select('ItemCode', 'ItemName')
         ->where('ItemCode', 'A001')
         ->top(5);
 
-    $client = new SapB1Client();
+    $client = new SapB1Client;
     $response = $client->odataQuery('Items', $query);
 
     expect($response->successful())->toBeTrue();
@@ -133,11 +133,12 @@ it('can add custom headers to a request', function () {
         if (str_contains($request->url(), 'Items')) {
             return Http::response(['value' => []], 200);
         }
+
         return Http::response('Not Found', 404);
     });
 
     Cache::flush();
-    $client = new SapB1Client();
+    $client = new SapB1Client;
     $client->withHeaders(['X-Custom-Header' => 'CustomValue'])->get('Items');
 
     Http::assertSent(function ($request) {
@@ -153,17 +154,18 @@ it('custom headers are only applied to the next request', function () {
         if (str_contains($request->url(), 'Items')) {
             return Http::response(['value' => []], 200);
         }
+
         return Http::response('Not Found', 404);
     });
 
     Cache::flush();
-    $client = new SapB1Client();
+    $client = new SapB1Client;
     $client->withHeaders(['X-Custom-Header' => 'CustomValue'])->get('Items');
     $client->get('Items');
 
     // Verificar que solo el primer request tiene el header
     $itemsRequests = collect(Http::recorded())
-        ->filter(fn($record) => str_contains($record[0]->url(), 'Items'))
+        ->filter(fn ($record) => str_contains($record[0]->url(), 'Items'))
         ->values();
 
     expect($itemsRequests)->toHaveCount(2);
@@ -172,9 +174,9 @@ it('custom headers are only applied to the next request', function () {
 });
 
 it('can logout and clear the session', function () {
-    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager');
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager');
 
-    $client = new SapB1Client();
+    $client = new SapB1Client;
     expect(Cache::has($sessionKey))->toBeTrue();
 
     $client->logout();
@@ -190,7 +192,7 @@ it('can use the facade', function () {
 });
 
 it('facade can make odata queries', function () {
-    $query = (new ODataQuery())
+    $query = (new ODataQuery)
         ->select('CardCode', 'CardName')
         ->where('CardType', 'cCustomer')
         ->top(10);
@@ -205,6 +207,7 @@ it('facade can use custom headers', function () {
         if (str_contains($request->url(), 'Login')) {
             return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
         }
+
         return Http::response(['value' => []], 200);
     });
 
@@ -217,7 +220,7 @@ it('facade can use custom headers', function () {
 });
 
 it('can use sendRequestWithCallback', function () {
-    $client = new SapB1Client();
+    $client = new SapB1Client;
 
     $response = $client->sendRequestWithCallback(function ($httpClient) {
         return $httpClient->get('Items');

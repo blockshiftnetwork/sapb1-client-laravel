@@ -16,6 +16,6 @@ class Contains extends Filter
 
     public function execute()
     {
-        return 'contains(' . $this->field . ', ' . $this->escape($this->value) . ')';
+        return 'contains('.$this->field.', '.$this->escape($this->value).')';
     }
 }

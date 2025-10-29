@@ -260,19 +260,19 @@ describe('ODataQuery - Edge Cases', function () {
     });
 
     it('throws exception for between with invalid array', function () {
-        expect(fn() => (new ODataQuery)->where('DocDate', 'between', ['2024-01-01']))
+        expect(fn () => (new ODataQuery)->where('DocDate', 'between', ['2024-01-01']))
             ->toThrow(InvalidArgumentException::class, 'The value for "between" operator must be an array of two elements');
     });
 
     it('throws exception for unsupported operator', function () {
-        expect(fn() => (new ODataQuery)->where('Field', 'invalid_operator', 'value'))
+        expect(fn () => (new ODataQuery)->where('Field', 'invalid_operator', 'value'))
             ->toThrow(InvalidArgumentException::class, "Unsupported operator 'invalid_operator'");
     });
 });
 
 describe('ODataQuery - Method Chaining', function () {
     it('returns self for method chaining', function () {
-        $query = new ODataQuery();
+        $query = new ODataQuery;
 
         expect($query->select('Field1'))->toBe($query);
         expect($query->where('Field2', 'value'))->toBe($query);
