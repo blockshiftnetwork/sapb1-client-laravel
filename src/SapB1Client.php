@@ -116,7 +116,15 @@ class SapB1Client
 
         $this->headers = [];
 
-        $response = $request->$method($endpoint, $data);
+        // Soportar todos los métodos HTTP
+        $response = match ($method) {
+            'get' => $request->get($endpoint, $data),
+            'post' => $request->post($endpoint, $data),
+            'put' => $request->put($endpoint, $data),
+            'patch' => $request->patch($endpoint, $data),
+            'delete' => $request->delete($endpoint, $data),
+            default => $request->$method($endpoint, $data),
+        };
 
         return $response;
     }
@@ -129,6 +137,11 @@ class SapB1Client
     public function post(string $endpoint, array $data = []): Response
     {
         return $this->sendRequest('post', $endpoint, $data);
+    }
+
+    public function put(string $endpoint, array $data = []): Response
+    {
+        return $this->sendRequest('put', $endpoint, $data);
     }
 
     public function patch(string $endpoint, array $data = []): Response
