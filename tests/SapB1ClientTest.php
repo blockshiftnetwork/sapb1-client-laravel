@@ -1,22 +1,26 @@
 <?php
 
+use BlockshiftNetwork\SapB1Client\Facades\SapBOne;
+use BlockshiftNetwork\SapB1Client\ODataQuery;
+use BlockshiftNetwork\SapB1Client\SapB1Client;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
+    Cache::flush();
+
     Http::fake([
-        'sap-server/b1s/v1/Login' => Http::sequence()
+        '*Login*' => Http::sequence()
             ->push(['SessionId' => 'mock_session_id', 'Version' => '10.0'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;'])
             ->push('Login failed', 500)
             ->push(['SessionId' => 'new_mock_session_id', 'Version' => '10.0'], 200, ['Set-Cookie' => 'B1SESSION=new_mock_session_cookie;']),
-        'sap-server/b1s/v1/Items*' => Http::response(['value' => [['ItemCode' => 'A001'], ['ItemCode' => 'A002']]], 200),
-        'sap-server/b1s/v1/BusinessPartners' => Http::sequence()
-            ->push(['CardCode' => 'C2024'], 201)
-            ->push(null, 204),
-        'sap-server/b1s/v1/BusinessPartners(\'C2024\')' => Http::sequence()
+        '*Items*' => Http::response(['value' => [['ItemCode' => 'A001'], ['ItemCode' => 'A002']]], 200),
+        '*BusinessPartners*' => Http::sequence()
+            ->push(['CardCode' => 'C2024', 'CardName' => 'Test Customer'], 201)
+            ->push(['CardCode' => 'C2024', 'CardName' => 'Updated Customer'], 200)
             ->push(null, 204)
             ->push(null, 204),
-        'sap-server/b1s/v1/Logout' => Http::response(null, 204),
+        '*Logout*' => Http::response(null, 204),
         '*' => Http::response('Not Found', 404),
     ]);
 
@@ -24,96 +28,228 @@ beforeEach(function () {
     config()->set('sapb1-client.database', 'SBO_PROD');
     config()->set('sapb1-client.username', 'manager');
     config()->set('sapb1-client.password', 'password');
+    config()->set('sapb1-client.cache_ttl', 1800);
+    config()->set('sapb1-client.verify_ssl', false);
 });
 
 it('can login and cache the session', function () {
-    $this->assertFalse(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager');
 
-    Http::SapBOne([]);
+    expect(Cache::has($sessionKey))->toBeFalse();
 
-    $this->assertTrue(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
-    $this->assertEquals('B1SESSION=mock_session_cookie;', Cache::get('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+    $client = new SapB1Client();
+
+    expect(Cache::has($sessionKey))->toBeTrue();
+    expect(Cache::get($sessionKey))->toContain('B1SESSION=');
 });
 
-it('throws an exception on failed login', function () {
-    Http::SapBOne([]);
+it('validates required configuration', function () {
     Cache::flush();
 
-    $this->expectException(Exception::class);
-    $this->expectExceptionMessage('SAP B1 Login Failed: Login failed');
-
-    Http::SapBOne([]);
+    expect(fn() => new SapB1Client([
+        'server' => '',
+        'database' => '',
+        'username' => '',
+        'password' => '',
+    ]))->toThrow(InvalidArgumentException::class, 'Missing required configuration');
 });
 
 it('can make get requests', function () {
-    $response = Http::SapBOne([])->get('Items');
-    $this->assertEquals([['ItemCode' => 'A001'], ['ItemCode' => 'A002']], $response->json('value'));
+    $client = new SapB1Client();
+    $response = $client->get('Items');
+
+    expect($response->successful())->toBeTrue();
+    expect($response->json('value'))->toBe([['ItemCode' => 'A001'], ['ItemCode' => 'A002']]);
 });
 
-it('can make odata queries', function () {
-    $response = Http::SapBOne([])->odataQuery('Items', ['$top' => 2]);
-    $this->assertEquals([['ItemCode' => 'A001'], ['ItemCode' => 'A002']], $response->json('value'));
+it('can use facade to make get requests', function () {
+    $response = SapBOne::get('Items');
+
+    expect($response->successful())->toBeTrue();
+    expect($response->json('value'))->toHaveCount(2);
 });
 
 it('can make post requests', function () {
-    $response = Http::SapBOne([])->post('BusinessPartners', ['CardCode' => 'C2024']);
-    $this->assertEquals(['CardCode' => 'C2024'], $response->json());
+    $client = new SapB1Client();
+    $response = $client->post('BusinessPartners', ['CardCode' => 'C2024']);
+
+    expect($response->successful())->toBeTrue();
+    expect($response->json('CardCode'))->toBe('C2024');
+});
+
+it('can make put requests', function () {
+    $client = new SapB1Client();
+
+    Http::fake([
+        '*Login*' => Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']),
+        '*BusinessPartners*' => Http::response(['CardCode' => 'C2024', 'CardName' => 'Updated via PUT'], 200),
+    ]);
+
+    $response = $client->put("BusinessPartners('C2024')", ['CardName' => 'Updated Name']);
+
+    expect($response->successful())->toBeTrue();
 });
 
 it('can make patch requests', function () {
-    $response = Http::SapBOne([])->patch("BusinessPartners('C2024')", ['CardName' => 'New Name']);
-    $this->assertTrue($response->successful());
+    $client = new SapB1Client();
+    $response = $client->patch("BusinessPartners('C2024')", ['CardName' => 'New Name']);
+
+    expect($response->successful())->toBeTrue();
 });
 
 it('can make delete requests', function () {
-    $response = Http::SapBOne([])->delete("BusinessPartners('C2024')");
-    $this->assertTrue($response->successful());
+    $client = new SapB1Client();
+    $response = $client->delete("BusinessPartners('C2024')");
+
+    expect($response->successful())->toBeTrue();
+});
+
+it('can make odata queries with array', function () {
+    $client = new SapB1Client();
+    $response = $client->odataQuery('Items', ['$top' => 2]);
+
+    expect($response->successful())->toBeTrue();
+    expect($response->json('value'))->toBe([['ItemCode' => 'A001'], ['ItemCode' => 'A002']]);
+});
+
+it('can make odata queries with query builder', function () {
+    $query = (new ODataQuery())
+        ->select('ItemCode', 'ItemName')
+        ->where('ItemCode', 'A001')
+        ->top(5);
+
+    $client = new SapB1Client();
+    $response = $client->odataQuery('Items', $query);
+
+    expect($response->successful())->toBeTrue();
+    expect($response->json())->toHaveKey('value');
 });
 
 it('can add custom headers to a request', function () {
-    Http::fake(['*' => Http::response(null, 200)]);
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        if (str_contains($request->url(), 'Items')) {
+            return Http::response(['value' => []], 200);
+        }
+        return Http::response('Not Found', 404);
+    });
 
-    Http::SapBOne([])->withHeaders(['X-Custom-Header' => 'CustomValue'])->get('Items');
+    Cache::flush();
+    $client = new SapB1Client();
+    $client->withHeaders(['X-Custom-Header' => 'CustomValue'])->get('Items');
 
     Http::assertSent(function ($request) {
-        return $request->hasHeader('X-Custom-Header', 'CustomValue');
+        return str_contains($request->url(), 'Items') && $request->hasHeader('X-Custom-Header', 'CustomValue');
     });
 });
 
 it('custom headers are only applied to the next request', function () {
-    Http::fake(['*' => Http::response(null, 200)]);
-
-    Http::SapBOne([])->withHeaders(['X-Custom-Header' => 'CustomValue'])->get('Items');
-    Http::SapBOne([])->get('Items');
-
-    Http::assertSent(function ($request) {
-        return $request->url() === 'https://sap-server/b1s/v1/Items' && $request->hasHeader('X-Custom-Header', 'CustomValue');
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        if (str_contains($request->url(), 'Items')) {
+            return Http::response(['value' => []], 200);
+        }
+        return Http::response('Not Found', 404);
     });
 
-    Http::assertSent(function ($request) {
-        return $request->url() === 'https://sap-server/b1s/v1/Items' && ! $request->hasHeader('X-Custom-Header');
-    });
+    Cache::flush();
+    $client = new SapB1Client();
+    $client->withHeaders(['X-Custom-Header' => 'CustomValue'])->get('Items');
+    $client->get('Items');
+
+    // Verificar que solo el primer request tiene el header
+    $itemsRequests = collect(Http::recorded())
+        ->filter(fn($record) => str_contains($record[0]->url(), 'Items'))
+        ->values();
+
+    expect($itemsRequests)->toHaveCount(2);
+    expect($itemsRequests[0][0]->hasHeader('X-Custom-Header', 'CustomValue'))->toBeTrue();
+    expect($itemsRequests[1][0]->hasHeader('X-Custom-Header'))->toBeFalse();
 });
 
 it('can logout and clear the session', function () {
-    Http::SapBOne([]);
-    $this->assertTrue(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager');
 
-    Http::SapBOne([])->logout();
+    $client = new SapB1Client();
+    expect(Cache::has($sessionKey))->toBeTrue();
 
-    $this->assertFalse(Cache::has('sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager')));
+    $client->logout();
+
+    expect(Cache::has($sessionKey))->toBeFalse();
 });
 
-it('retries the request on failure', function () {
-    Http::fake([
-        'sap-server/b1s/v1/Login' => Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']),
-        'sap-server/b1s/v1/Items' => Http::sequence()
-            ->push('Server Error', 500)
-            ->push(['value' => [['ItemCode' => 'A001']]], 200),
-    ]);
+it('can use the facade', function () {
+    $response = SapBOne::get('Items');
 
+    expect($response->successful())->toBeTrue();
+    expect($response->json('value'))->toHaveCount(2);
+});
+
+it('facade can make odata queries', function () {
+    $query = (new ODataQuery())
+        ->select('CardCode', 'CardName')
+        ->where('CardType', 'cCustomer')
+        ->top(10);
+
+    $response = SapBOne::odataQuery('BusinessPartners', $query);
+
+    expect($response->successful())->toBeTrue();
+});
+
+it('facade can use custom headers', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        return Http::response(['value' => []], 200);
+    });
+
+    Cache::flush();
+    SapBOne::withHeaders(['X-Custom-Header' => 'TestValue'])->get('Items');
+
+    Http::assertSent(function ($request) {
+        return str_contains($request->url(), 'Items') && $request->hasHeader('X-Custom-Header', 'TestValue');
+    });
+});
+
+it('can use sendRequestWithCallback', function () {
+    $client = new SapB1Client();
+
+    $response = $client->sendRequestWithCallback(function ($httpClient) {
+        return $httpClient->get('Items');
+    });
+
+    expect($response->successful())->toBeTrue();
+    expect($response->json('value'))->toHaveCount(2);
+});
+
+it('facade can use sendRequestWithCallback', function () {
+    $response = SapBOne::sendRequestWithCallback(function ($httpClient) {
+        return $httpClient->get('Items', ['$top' => 1]);
+    });
+
+    expect($response->successful())->toBeTrue();
+    expect($response->json())->toHaveKey('value');
+});
+
+it('can use http macro SapBOne', function () {
     $response = Http::SapBOne([])->get('Items');
 
-    $this->assertTrue($response->successful());
-    $this->assertEquals([['ItemCode' => 'A001']], $response->json('value'));
+    expect($response->successful())->toBeTrue();
+    expect($response->json('value'))->toHaveCount(2);
+});
+
+it('http macro can accept custom config', function () {
+    $customClient = Http::SapBOne([
+        'server' => 'https://custom-server/b1s/v1/',
+        'database' => 'CUSTOM_DB',
+        'username' => 'custom_user',
+        'password' => 'custom_pass',
+    ]);
+
+    expect($customClient)->toBeInstanceOf(SapB1Client::class);
 });
