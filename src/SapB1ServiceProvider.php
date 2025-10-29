@@ -18,7 +18,7 @@ class SapB1ServiceProvider extends PackageServiceProvider
     public function registeringPackage(): void
     {
         $this->app->singleton(SapB1Client::class, function ($app) {
-            return new SapB1Client();
+            return new SapB1Client;
         });
     }
 
