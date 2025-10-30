@@ -2,6 +2,8 @@
 
 namespace BlockshiftNetwork\SapB1Client\Filters;
 
+use Override;
+
 class StartsWith extends Filter
 {
     private string $field;
@@ -14,8 +16,9 @@ class StartsWith extends Filter
         $this->value = $value;
     }
 
+    #[Override]
     public function execute(): string
     {
-        return 'startswith('.$this->field.', '.$this->escape($this->value).')';
+        return 'startswith(' . $this->field . ', ' . $this->escape($this->value) . ')';
     }
 }

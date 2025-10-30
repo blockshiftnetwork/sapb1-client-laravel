@@ -2,6 +2,8 @@
 
 namespace BlockshiftNetwork\SapB1Client\Filters;
 
+use Override;
+
 class InArray extends Filter
 {
     private string $field;
@@ -18,6 +20,7 @@ class InArray extends Filter
         $this->collection = $collection;
     }
 
+    #[Override]
     public function execute(): string
     {
         $group = '';

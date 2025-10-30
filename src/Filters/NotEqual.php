@@ -2,6 +2,8 @@
 
 namespace BlockshiftNetwork\SapB1Client\Filters;
 
+use Override;
+
 class NotEqual extends Filter
 {
     private string $field;
@@ -14,8 +16,9 @@ class NotEqual extends Filter
         $this->value = $value;
     }
 
+    #[Override]
     public function execute(): string
     {
-        return $this->field.' ne '.$this->escape($this->value);
+        return $this->field . ' ne ' . $this->escape($this->value);
     }
 }

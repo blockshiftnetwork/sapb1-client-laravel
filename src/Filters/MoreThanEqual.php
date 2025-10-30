@@ -2,6 +2,8 @@
 
 namespace BlockshiftNetwork\SapB1Client\Filters;
 
+use Override;
+
 class MoreThanEqual extends Filter
 {
     private string $field;
@@ -14,8 +16,9 @@ class MoreThanEqual extends Filter
         $this->value = $value;
     }
 
+    #[Override]
     public function execute(): string
     {
-        return $this->field.' ge '.$this->escape($this->value);
+        return $this->field . ' ge ' . $this->escape($this->value);
     }
 }

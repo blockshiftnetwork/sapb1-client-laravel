@@ -2,6 +2,8 @@
 
 namespace BlockshiftNetwork\SapB1Client\Filters;
 
+use Override;
+
 class Contains extends Filter
 {
     private string $field;
@@ -14,8 +16,9 @@ class Contains extends Filter
         $this->value = $value;
     }
 
+    #[Override]
     public function execute(): string
     {
-        return 'contains('.$this->field.', '.$this->escape($this->value).')';
+        return 'contains(' . $this->field . ', ' . $this->escape($this->value) . ')';
     }
 }

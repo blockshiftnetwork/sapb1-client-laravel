@@ -2,6 +2,8 @@
 
 namespace BlockshiftNetwork\SapB1Client\Filters;
 
+use Override;
+
 class EndsWith extends Filter
 {
     private string $field;
@@ -14,8 +16,9 @@ class EndsWith extends Filter
         $this->value = $value;
     }
 
+    #[Override]
     public function execute(): string
     {
-        return 'endswith('.$this->field.', '.$this->escape($this->value).')';
+        return 'endswith(' . $this->field . ', ' . $this->escape($this->value) . ')';
     }
 }

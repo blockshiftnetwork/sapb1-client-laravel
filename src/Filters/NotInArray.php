@@ -2,6 +2,8 @@
 
 namespace BlockshiftNetwork\SapB1Client\Filters;
 
+use Override;
+
 class NotInArray extends Filter
 {
     private string $field;
@@ -18,15 +20,16 @@ class NotInArray extends Filter
         $this->collection = $collection;
     }
 
+    #[Override]
     public function execute(): string
     {
         $group = '';
 
         foreach ($this->collection as $idx => $value) {
             $op = ($idx < count($this->collection) - 1) ? ' and ' : '';
-            $group .= $this->field.' ne '.$this->escape($value).$op;
+            $group .= $this->field . ' ne ' . $this->escape($value) . $op;
         }
 
-        return '('.$group.')';
+        return '(' . $group . ')';
     }
 }

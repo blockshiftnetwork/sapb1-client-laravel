@@ -2,6 +2,8 @@
 
 namespace BlockshiftNetwork\SapB1Client\Filters;
 
+use Override;
+
 class Between extends Filter
 {
     private string $field;
@@ -17,8 +19,9 @@ class Between extends Filter
         $this->toValue = $toValue;
     }
 
+    #[Override]
     public function execute(): string
     {
-        return '('.$this->field.' ge '.$this->escape($this->fromValue).' and '.$this->field.' le '.$this->escape($this->toValue).')';
+        return '(' . $this->field . ' ge ' . $this->escape($this->fromValue) . ' and ' . $this->field . ' le ' . $this->escape($this->toValue) . ')';
     }
 }

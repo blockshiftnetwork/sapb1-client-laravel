@@ -2,6 +2,8 @@
 
 namespace BlockshiftNetwork\SapB1Client\Filters;
 
+use Override;
+
 class Raw extends Filter
 {
     private string $string;
@@ -11,6 +13,7 @@ class Raw extends Filter
         $this->string = $string;
     }
 
+    #[Override]
     public function execute(): string
     {
         return $this->string;
