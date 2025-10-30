@@ -144,7 +144,7 @@ class ODataQuery
 
     public function orderBy(string $field, string $direction = 'asc'): self
     {
-        $this->orderBy[] = $field . ' ' . $direction;
+        $this->orderBy[] = $field.' '.$direction;
 
         return $this;
     }
@@ -193,7 +193,7 @@ class ODataQuery
         $filterString = '';
         foreach ($this->filter as $index => $filter) {
             if ($index > 0) {
-                $filterString .= ' ' . ($filter->getOperator() ?? 'and') . ' ';
+                $filterString .= ' '.($filter->getOperator() ?? 'and').' ';
             }
             $filterString .= $filter->execute();
         }
