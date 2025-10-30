@@ -19,24 +19,30 @@ use InvalidArgumentException;
 
 class ODataQuery
 {
-    private $select = [];
+    /** @var array<int, string> */
+    private array $select = [];
 
-    private $filter = [];
+    /** @var array<int, Filter> */
+    private array $filter = [];
 
-    private $orderBy = [];
+    /** @var array<int, string> */
+    private array $orderBy = [];
 
-    private $top;
+    private ?int $top = null;
 
-    private $skip;
+    private ?int $skip = null;
 
-    public function select($fields)
+    /**
+     * @param  string|array<int, string>  ...$fields
+     */
+    public function select(string|array ...$fields): self
     {
-        $this->select = is_array($fields) ? $fields : func_get_args();
+        $this->select = is_array($fields[0] ?? null) ? $fields[0] : $fields;
 
         return $this;
     }
 
-    public function where($field, $operator = null, $value = null)
+    public function where(Filter|string $field, mixed $operator = null, mixed $value = null): self
     {
         if ($field instanceof Filter) {
             if (! empty($this->filter)) {
@@ -63,7 +69,7 @@ class ODataQuery
         return $this;
     }
 
-    public function orWhere($field, $operator = null, $value = null)
+    public function orWhere(Filter|string $field, mixed $operator = null, mixed $value = null): self
     {
         if ($field instanceof Filter) {
             if (empty($this->filter)) {
@@ -94,8 +100,9 @@ class ODataQuery
         return $this;
     }
 
-    protected function createFilter($field, $operator, $value)
+    protected function createFilter(string $field, mixed $operator, mixed $value): Filter
     {
+        /** @var array<string, class-string<Filter>> */
         $operatorMap = [
             '=' => Equal::class,
             'eq' => Equal::class,
@@ -116,7 +123,7 @@ class ODataQuery
             'notin' => NotInArray::class,
         ];
 
-        $operator = strtolower($operator);
+        $operator = strtolower((string) ($operator ?? 'eq'));
 
         if ($operator === 'between') {
             if (! is_array($value) || count($value) !== 2) {
@@ -135,28 +142,31 @@ class ODataQuery
         return new $filterClass($field, $value);
     }
 
-    public function orderBy($field, $direction = 'asc')
+    public function orderBy(string $field, string $direction = 'asc'): self
     {
-        $this->orderBy[] = $field.' '.$direction;
+        $this->orderBy[] = $field . ' ' . $direction;
 
         return $this;
     }
 
-    public function top($number)
+    public function top(int $number): self
     {
         $this->top = $number;
 
         return $this;
     }
 
-    public function skip($number)
+    public function skip(int $number): self
     {
         $this->skip = $number;
 
         return $this;
     }
 
-    public function toArray()
+    /**
+     * @return array<string, string|int>
+     */
+    public function toArray(): array
     {
         $query = [];
         if (! empty($this->select)) {
@@ -178,12 +188,12 @@ class ODataQuery
         return $query;
     }
 
-    private function compileFilters()
+    private function compileFilters(): string
     {
         $filterString = '';
         foreach ($this->filter as $index => $filter) {
             if ($index > 0) {
-                $filterString .= ' '.($filter->getOperator() ?? 'and').' ';
+                $filterString .= ' ' . ($filter->getOperator() ?? 'and') . ' ';
             }
             $filterString .= $filter->execute();
         }

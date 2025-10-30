@@ -17,14 +17,14 @@ class SapB1ServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
-        $this->app->singleton(SapB1Client::class, function ($app) {
+        $this->app->singleton(SapB1Client::class, function ($app): SapB1Client {
             return new SapB1Client;
         });
     }
 
-    public function bootingPackage()
+    public function bootingPackage(): void
     {
-        Http::macro('SapBOne', function (array $config = []) {
+        Http::macro('SapBOne', function (array $config = []): SapB1Client {
             return new SapB1Client($config);
         });
     }

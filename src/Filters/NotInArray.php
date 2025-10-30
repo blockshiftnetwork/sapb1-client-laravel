@@ -4,17 +4,21 @@ namespace BlockshiftNetwork\SapB1Client\Filters;
 
 class NotInArray extends Filter
 {
-    private $field;
+    private string $field;
 
-    private $collection;
+    /** @var array<int, mixed> */
+    private array $collection;
 
-    public function __construct($field, array $collection)
+    /**
+     * @param  array<int, mixed>  $collection
+     */
+    public function __construct(string $field, array $collection)
     {
         $this->field = $field;
         $this->collection = $collection;
     }
 
-    public function execute()
+    public function execute(): string
     {
         $group = '';
 
