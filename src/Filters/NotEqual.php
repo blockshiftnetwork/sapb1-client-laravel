@@ -19,6 +19,6 @@ class NotEqual extends Filter
     #[Override]
     public function execute(): string
     {
-        return $this->field . ' ne ' . $this->escape($this->value);
+        return $this->field.' ne '.$this->escape($this->value);
     }
 }

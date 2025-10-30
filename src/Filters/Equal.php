@@ -19,6 +19,6 @@ class Equal extends Filter
     #[Override]
     public function execute(): string
     {
-        return $this->field . ' eq ' . $this->escape($this->value);
+        return $this->field.' eq '.$this->escape($this->value);
     }
 }

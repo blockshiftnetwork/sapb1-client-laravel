@@ -19,6 +19,6 @@ class EndsWith extends Filter
     #[Override]
     public function execute(): string
     {
-        return 'endswith(' . $this->field . ', ' . $this->escape($this->value) . ')';
+        return 'endswith('.$this->field.', '.$this->escape($this->value).')';
     }
 }

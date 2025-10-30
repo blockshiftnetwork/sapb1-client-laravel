@@ -19,6 +19,6 @@ class MoreThan extends Filter
     #[Override]
     public function execute(): string
     {
-        return $this->field . ' gt ' . $this->escape($this->value);
+        return $this->field.' gt '.$this->escape($this->value);
     }
 }

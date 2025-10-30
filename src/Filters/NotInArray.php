@@ -27,9 +27,9 @@ class NotInArray extends Filter
 
         foreach ($this->collection as $idx => $value) {
             $op = ($idx < count($this->collection) - 1) ? ' and ' : '';
-            $group .= $this->field . ' ne ' . $this->escape($value) . $op;
+            $group .= $this->field.' ne '.$this->escape($value).$op;
         }
 
-        return '(' . $group . ')';
+        return '('.$group.')';
     }
 }

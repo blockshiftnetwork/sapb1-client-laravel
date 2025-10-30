@@ -19,6 +19,6 @@ class MoreThanEqual extends Filter
     #[Override]
     public function execute(): string
     {
-        return $this->field . ' ge ' . $this->escape($this->value);
+        return $this->field.' ge '.$this->escape($this->value);
     }
 }

@@ -19,6 +19,6 @@ class LessThanEqual extends Filter
     #[Override]
     public function execute(): string
     {
-        return $this->field . ' le ' . $this->escape($this->value);
+        return $this->field.' le '.$this->escape($this->value);
     }
 }

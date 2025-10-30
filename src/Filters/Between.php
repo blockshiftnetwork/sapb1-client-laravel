@@ -22,6 +22,6 @@ class Between extends Filter
     #[Override]
     public function execute(): string
     {
-        return '(' . $this->field . ' ge ' . $this->escape($this->fromValue) . ' and ' . $this->field . ' le ' . $this->escape($this->toValue) . ')';
+        return '('.$this->field.' ge '.$this->escape($this->fromValue).' and '.$this->field.' le '.$this->escape($this->toValue).')';
     }
 }
