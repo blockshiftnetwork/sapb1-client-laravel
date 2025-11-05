@@ -15,7 +15,7 @@ class Contains extends Filter
 
     /**
      * @param  string  $field  Field name to apply the `contains` function on.
-     * @param  mixed   $value  Substring to search for within the field value.
+     * @param  mixed  $value  Substring to search for within the field value.
      */
     public function __construct(string $field, mixed $value)
     {
@@ -26,6 +26,6 @@ class Contains extends Filter
     #[Override]
     public function execute(): string
     {
-        return 'contains(' . $this->field . ', ' . $this->escape($this->value) . ')';
+        return 'contains('.$this->field.', '.$this->escape($this->value).')';
     }
 }

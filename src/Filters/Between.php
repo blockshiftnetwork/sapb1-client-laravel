@@ -19,9 +19,9 @@ class Between extends Filter
     private mixed $toValue;
 
     /**
-     * @param  string  $field      Field name to compare.
-     * @param  mixed   $fromValue  Inclusive lower bound.
-     * @param  mixed   $toValue    Inclusive upper bound.
+     * @param  string  $field  Field name to compare.
+     * @param  mixed  $fromValue  Inclusive lower bound.
+     * @param  mixed  $toValue  Inclusive upper bound.
      */
     public function __construct(string $field, mixed $fromValue, mixed $toValue)
     {
@@ -33,6 +33,6 @@ class Between extends Filter
     #[Override]
     public function execute(): string
     {
-        return '(' . $this->field . ' ge ' . $this->escape($this->fromValue) . ' and ' . $this->field . ' le ' . $this->escape($this->toValue) . ')';
+        return '('.$this->field.' ge '.$this->escape($this->fromValue).' and '.$this->field.' le '.$this->escape($this->toValue).')';
     }
 }

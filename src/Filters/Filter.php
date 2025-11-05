@@ -48,7 +48,7 @@ abstract class Filter
         if (is_string($value)) {
             $value = str_replace("'", "''", $value);
 
-            return "'" . $value . "'";
+            return "'".$value."'";
         }
 
         // For any other type, cast to string

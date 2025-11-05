@@ -16,7 +16,6 @@ use Override;
  * @example
  * // ✅ Safe usage - hardcoded string
  * $query = (new ODataQuery)->where(new Raw("contains(CardName, 'Test')"));
- *
  * @example
  * // ❌ DANGEROUS - user input
  * $userInput = $_GET['filter']; // NEVER DO THIS
