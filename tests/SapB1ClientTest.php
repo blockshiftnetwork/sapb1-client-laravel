@@ -33,7 +33,7 @@ beforeEach(function () {
 });
 
 it('can login and cache the session', function () {
-    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager');
+    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager');
 
     expect(Cache::has($sessionKey))->toBeFalse();
 
@@ -46,7 +46,7 @@ it('can login and cache the session', function () {
 it('validates required configuration', function () {
     Cache::flush();
 
-    expect(fn () => new SapB1Client([
+    expect(fn() => new SapB1Client([
         'server' => '',
         'database' => '',
         'username' => '',
@@ -165,7 +165,7 @@ it('custom headers are only applied to the next request', function () {
 
     // Verificar que solo el primer request tiene el header
     $itemsRequests = collect(Http::recorded())
-        ->filter(fn ($record) => str_contains($record[0]->url(), 'Items'))
+        ->filter(fn($record) => str_contains($record[0]->url(), 'Items'))
         ->values();
 
     expect($itemsRequests)->toHaveCount(2);
@@ -174,7 +174,7 @@ it('custom headers are only applied to the next request', function () {
 });
 
 it('can logout and clear the session', function () {
-    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager');
+    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager');
 
     $client = new SapB1Client;
     expect(Cache::has($sessionKey))->toBeTrue();

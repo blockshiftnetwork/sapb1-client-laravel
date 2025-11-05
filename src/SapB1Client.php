@@ -20,6 +20,8 @@ class SapB1Client
 
     protected array $headers = [];
 
+    protected bool $isRetryingWithNewSession = false;
+
     public function __construct(#[SensitiveParameter] array $config = [])
     {
         $this->config = array_merge(config('sapb1-client', []), $config);
@@ -56,7 +58,7 @@ class SapB1Client
 
     protected function getSessionKey(): string
     {
-        return 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
+        return 'sapb1-session:' . md5($this->config['server'] . $this->config['database'] . $this->config['username']);
     }
 
     protected function login(): void
@@ -69,6 +71,15 @@ class SapB1Client
             return;
         }
 
+        $this->performLogin();
+    }
+
+    /**
+     * Perform the actual login request to SAP B1.
+     * Cache::put() will automatically overwrite any existing session.
+     */
+    protected function performLogin(): void
+    {
         $response = $this->http->retry(3, 100)
             ->post('Login', [
                 'CompanyDB' => $this->config['database'],
@@ -77,11 +88,30 @@ class SapB1Client
             ]);
 
         if ($response->failed()) {
-            throw new Exception('SAP B1 Login Failed: '.$response->body());
+            throw new Exception('SAP B1 Login Failed: ' . $response->body());
         }
 
         $this->sessionCookie = $response->header('Set-Cookie');
+        $sessionKey = $this->getSessionKey();
         Cache::put($sessionKey, $this->sessionCookie, $this->config['cache_ttl']);
+    }
+
+    /**
+     * Check if the response indicates an expired or invalid session.
+     */
+    protected function isSessionExpired(Response $response): bool
+    {
+        // SAP B1 returns 401 Unauthorized when session expires
+        if ($response->status() === 401) {
+            return true;
+        }
+
+        // Some SAP B1 configurations may return 403 Forbidden
+        if ($response->status() === 403) {
+            return true;
+        }
+
+        return false;
     }
 
     public function logout(): void
@@ -127,6 +157,18 @@ class SapB1Client
             'delete' => $request->delete($endpoint, $data),
             default => $request->$method($endpoint, $data),
         };
+
+        // Automatic session renewal on expiration (Octane-safe)
+        if ($this->isSessionExpired($response) && ! $this->isRetryingWithNewSession) {
+            $this->isRetryingWithNewSession = true;
+
+            try {
+                $this->performLogin();
+                $response = $this->sendRequest($method, $endpoint, $data);
+            } finally {
+                $this->isRetryingWithNewSession = false;
+            }
+        }
 
         return $response;
     }
