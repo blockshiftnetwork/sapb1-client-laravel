@@ -1,5 +1,6 @@
 <?php
 
+use BlockshiftNetwork\SapB1Client\Filters\Contains;
 use BlockshiftNetwork\SapB1Client\Filters\Raw;
 use BlockshiftNetwork\SapB1Client\ODataQuery;
 
@@ -145,6 +146,33 @@ describe('ODataQuery - Chaining', function () {
             ->where('Balance', '>', 0)
             ->orWhere('CardName', 'contains', 'VIP');
         expect($query->toArray())->toBe(['$filter' => "CardType eq 'cCustomer' and Balance gt 0 or contains(CardName, 'VIP')"]);
+    });
+
+    it('treats an orWhere as a where when used first', function () {
+        $query = (new ODataQuery)
+            ->orWhere('Status', 'Active');
+
+        expect($query->toArray())->toBe(['$filter' => "Status eq 'Active'"]);
+    });
+
+    it('supports filter instances passed to orWhere', function () {
+        $vipFilter = new Contains('CardName', 'VIP');
+
+        $query = (new ODataQuery)
+            ->where('Status', 'Active')
+            ->orWhere($vipFilter);
+
+        expect($query->toArray())->toBe(['$filter' => "Status eq 'Active' or contains(CardName, 'VIP')"]);
+    });
+
+    it('chains filter instances with mixed logical operators', function () {
+        $vipFilter = new Contains('CardName', 'VIP');
+
+        $query = (new ODataQuery)
+            ->where($vipFilter)
+            ->orWhere('Status', 'Pending');
+
+        expect($query->toArray())->toBe(['$filter' => "contains(CardName, 'VIP') or Status eq 'Pending'"]);
     });
 });
 
