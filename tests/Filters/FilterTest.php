@@ -71,3 +71,18 @@ it('returns the raw filter string without modification', function () {
 
     expect($filter->execute())->toBe("contains(CardName, 'VIP') and Balance gt 1000");
 });
+
+it('escapes literal values consistently', function () {
+    $filter = new Equal('Dummy', 'value');
+
+    expect($filter->escape(42))->toBe(42);
+    expect($filter->escape(9.5))->toBe(9.5);
+    expect($filter->escape("O'Brien"))->toBe("'O''Brien'");
+    expect($filter->escape(true))->toBe('1');
+});
+
+it('quotes string values within in array filters', function () {
+    $filter = new InArray('Status', ['Open', 'Closed']);
+
+    expect($filter->execute())->toBe("(Status eq 'Open' or Status eq 'Closed')");
+});
