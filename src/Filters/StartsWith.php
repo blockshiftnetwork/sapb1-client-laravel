@@ -15,7 +15,7 @@ class StartsWith extends Filter
 
     /**
      * @param  string  $field  Field name to evaluate.
-     * @param  mixed   $value  Prefix that must be present at the start of the field value.
+     * @param  mixed  $value  Prefix that must be present at the start of the field value.
      */
     public function __construct(string $field, mixed $value)
     {
@@ -26,6 +26,6 @@ class StartsWith extends Filter
     #[Override]
     public function execute(): string
     {
-        return 'startswith(' . $this->field . ', ' . $this->escape($this->value) . ')';
+        return 'startswith('.$this->field.', '.$this->escape($this->value).')';
     }
 }

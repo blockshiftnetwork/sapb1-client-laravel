@@ -15,7 +15,7 @@ class MoreThan extends Filter
 
     /**
      * @param  string  $field  Field name to compare.
-     * @param  mixed   $value  Lower bound that the field must exceed.
+     * @param  mixed  $value  Lower bound that the field must exceed.
      */
     public function __construct(string $field, mixed $value)
     {
@@ -26,6 +26,6 @@ class MoreThan extends Filter
     #[Override]
     public function execute(): string
     {
-        return $this->field . ' gt ' . $this->escape($this->value);
+        return $this->field.' gt '.$this->escape($this->value);
     }
 }

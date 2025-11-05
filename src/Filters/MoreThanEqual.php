@@ -15,7 +15,7 @@ class MoreThanEqual extends Filter
 
     /**
      * @param  string  $field  Field name to compare.
-     * @param  mixed   $value  Minimum value allowed for the field.
+     * @param  mixed  $value  Minimum value allowed for the field.
      */
     public function __construct(string $field, mixed $value)
     {
@@ -26,6 +26,6 @@ class MoreThanEqual extends Filter
     #[Override]
     public function execute(): string
     {
-        return $this->field . ' ge ' . $this->escape($this->value);
+        return $this->field.' ge '.$this->escape($this->value);
     }
 }

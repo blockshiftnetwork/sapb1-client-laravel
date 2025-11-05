@@ -15,7 +15,7 @@ class Equal extends Filter
 
     /**
      * @param  string  $field  Field name to compare.
-     * @param  mixed   $value  Value that the field must equal.
+     * @param  mixed  $value  Value that the field must equal.
      */
     public function __construct(string $field, mixed $value)
     {
@@ -26,6 +26,6 @@ class Equal extends Filter
     #[Override]
     public function execute(): string
     {
-        return $this->field . ' eq ' . $this->escape($this->value);
+        return $this->field.' eq '.$this->escape($this->value);
     }
 }

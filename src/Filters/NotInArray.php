@@ -16,8 +16,8 @@ class NotInArray extends Filter
     private array $collection;
 
     /**
-     * @param  string            $field       Field name to compare.
-     * @param  array<int, mixed> $collection  Values that the field must differ from.
+     * @param  string  $field  Field name to compare.
+     * @param  array<int, mixed>  $collection  Values that the field must differ from.
      */
     public function __construct(string $field, array $collection)
     {
@@ -32,9 +32,9 @@ class NotInArray extends Filter
 
         foreach ($this->collection as $idx => $value) {
             $op = ($idx < count($this->collection) - 1) ? ' and ' : '';
-            $group .= $this->field . ' ne ' . $this->escape($value) . $op;
+            $group .= $this->field.' ne '.$this->escape($value).$op;
         }
 
-        return '(' . $group . ')';
+        return '('.$group.')';
     }
 }

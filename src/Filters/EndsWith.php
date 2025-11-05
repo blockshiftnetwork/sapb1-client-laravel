@@ -15,7 +15,7 @@ class EndsWith extends Filter
 
     /**
      * @param  string  $field  Field name to evaluate.
-     * @param  mixed   $value  Suffix that must be present at the end of the field value.
+     * @param  mixed  $value  Suffix that must be present at the end of the field value.
      */
     public function __construct(string $field, mixed $value)
     {
@@ -26,6 +26,6 @@ class EndsWith extends Filter
     #[Override]
     public function execute(): string
     {
-        return 'endswith(' . $this->field . ', ' . $this->escape($this->value) . ')';
+        return 'endswith('.$this->field.', '.$this->escape($this->value).')';
     }
 }

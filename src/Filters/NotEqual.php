@@ -15,7 +15,7 @@ class NotEqual extends Filter
 
     /**
      * @param  string  $field  Field name to compare.
-     * @param  mixed   $value  Value that the field must differ from.
+     * @param  mixed  $value  Value that the field must differ from.
      */
     public function __construct(string $field, mixed $value)
     {
@@ -26,6 +26,6 @@ class NotEqual extends Filter
     #[Override]
     public function execute(): string
     {
-        return $this->field . ' ne ' . $this->escape($this->value);
+        return $this->field.' ne '.$this->escape($this->value);
     }
 }
