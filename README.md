@@ -5,6 +5,11 @@
 
 A robust, production-grade Laravel package for SAP Business One HTTP integration, supporting both OData and custom (non-OData) SAP Service Layer (SML) endpoints.
 
+## Requirements
+
+- PHP 8.3 or higher
+- Laravel 11.x or 12.x
+
 ## Installation
 
 You can install the package via composer:
