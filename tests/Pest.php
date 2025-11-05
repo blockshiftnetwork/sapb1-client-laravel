@@ -17,7 +17,7 @@ function sapLoginResponsePayload(
     $base = rtrim($baseUri, '/');
 
     return [
-        'odata.metadata' => $base . '/$metadata#B1Sessions/@Element',
+        'odata.metadata' => $base.'/$metadata#B1Sessions/@Element',
         'SessionId' => $sessionId,
         'Version' => $version,
         'SessionTimeout' => $timeout,

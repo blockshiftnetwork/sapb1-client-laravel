@@ -26,7 +26,7 @@ it('registers sap b1 client as singleton', function () {
     expect($firstInstance)->toBe($secondInstance);
 
     $loginCount = collect(Http::recorded())
-        ->filter(fn($record) => str_contains($record[0]->url(), 'Login'))
+        ->filter(fn ($record) => str_contains($record[0]->url(), 'Login'))
         ->count();
 
     expect($loginCount)->toBe(1);
@@ -65,7 +65,7 @@ it('http macro respects per-call configuration overrides', function () {
         return str_contains($request->url(), 'custom-server');
     });
 
-    $sessionKey = 'sapb1-session:' . md5('https://custom-server/b1s/v1/CUSTOM_DBcustom_user');
+    $sessionKey = 'sapb1-session:'.md5('https://custom-server/b1s/v1/CUSTOM_DBcustom_user');
 
     expect(Cache::has($sessionKey))->toBeTrue();
 });
