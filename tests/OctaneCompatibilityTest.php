@@ -63,7 +63,7 @@ it('automatically renews session on 403 forbidden response', function () {
 });
 
 it('clears cached session when forcing new login', function () {
-    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager');
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager');
 
     Cache::flush();
 
