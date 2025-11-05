@@ -9,7 +9,7 @@ use Override;
 /**
  * @see \BlockshiftNetwork\SapB1Client\SapB1Client
  */
-class SapBOne extends Facade
+class SapB1 extends Facade
 {
     #[Override]
     protected static function getFacadeAccessor(): string

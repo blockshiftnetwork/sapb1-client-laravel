@@ -39,10 +39,10 @@ return [
 First, make sure to configure your SAP B1 credentials in your `.env` file.
 
 ```php
-use BlockshiftNetwork\SapB1Client\Facades\SapBOne;
+use BlockshiftNetwork\SapB1Client\Facades\SapB1;
 
 // Query top 5 items
-$response = SapBOne::odataQuery('Items', [
+$response = SapB1::odataQuery('Items', [
   '$filter'  => "ItemsGroupCode eq 100",
   '$orderby' => "ItemCode desc",
   '$top'     => 5,
@@ -56,7 +56,7 @@ $items = $response->json('value');
 For more complex scenarios, you can use the `ODataQuery` builder to construct your queries in a readable and maintainable way, very similar to Laravel's Eloquent.
 
 ```php
-use BlockshiftNetwork\SapB1Client\Facades\SapBOne;
+use BlockshiftNetwork\SapB1Client\Facades\SapB1;
 use BlockshiftNetwork\SapB1Client\ODataQuery;
 
 $query = (new ODataQuery())
@@ -69,7 +69,7 @@ $query = (new ODataQuery())
     ->top(50)
     ->skip(10);
 
-$response = SapBOne::odataQuery('BusinessPartners', $query);
+$response = SapB1::odataQuery('BusinessPartners', $query);
 
 $customers = $response->json('value');
 ```
@@ -99,7 +99,7 @@ For very specific or complex filters that are not covered by the operators above
 
 ```php
 // Custom SML endpoint, custom headers
-$response = SapBOne::withHeaders(['X-Company-Context' => 'VENEZUELA'])
+$response = SapB1::withHeaders(['X-Company-Context' => 'VENEZUELA'])
     ->get('/sml.svc/ItemsWithStock', [
       'warehouse'=> 'CABUDARE01'
     ]);
@@ -112,9 +112,9 @@ $data = $response->json();
 For scenarios like file uploads or other complex requests that are not covered by the standard methods, you can use the `sendRequestWithCallback` method. This gives you direct access to the configured HTTP client instance while still benefiting from the automatic re-login logic.
 
 ```php
-use BlockshiftNetwork\SapB1Client\Facades\SapBOne;
+use BlockshiftNetwork\SapB1Client\Facades\SapB1;
 
-$response = SapBOne::sendRequestWithCallback(function ($httpClient) {
+$response = SapB1::sendRequestWithCallback(function ($httpClient) {
     return $httpClient
         ->attach('my_file', file_get_contents('/path/to/file.pdf'), 'file.pdf')
         ->post('Attachments2');
@@ -129,14 +129,14 @@ $newCustomer = [
     'CardCode' => 'C2024',
     'CardName' => 'Beta Tech VZLA'
 ];
-$created = SapBOne::post('BusinessPartners', $newCustomer);
+$created = SapB1::post('BusinessPartners', $newCustomer);
 
 // PATCH example
 $body = ['CardName' => 'New Beta Tech'];
-$update = SapBOne::patch("BusinessPartners('C2024')", $body);
+$update = SapB1::patch("BusinessPartners('C2024')", $body);
 
 // DELETE example
-$delete = SapBOne::delete("BusinessPartners('C2024')");
+$delete = SapB1::delete("BusinessPartners('C2024')");
 ```
 
 ### F. Concurrent Requests with Pool
@@ -144,9 +144,9 @@ $delete = SapBOne::delete("BusinessPartners('C2024')");
 Execute multiple requests concurrently for better performance:
 
 ```php
-use BlockshiftNetwork\SapB1Client\Facades\SapBOne;
+use BlockshiftNetwork\SapB1Client\Facades\SapB1;
 
-$responses = SapBOne::pool(function ($pool) {
+$responses = SapB1::pool(function ($pool) {
     return [
         $pool->as('items')->get('Items', ['$top' => 10]),
         $pool->as('partners')->get('BusinessPartners', ['$top' => 10]),
@@ -165,7 +165,7 @@ $orders = $responses['orders']->json('value');
 You can also use POST, PUT, PATCH, DELETE in pool:
 
 ```php
-$responses = SapBOne::pool(function ($pool) {
+$responses = SapB1::pool(function ($pool) {
     return [
         $pool->as('create')->post('BusinessPartners', ['CardCode' => 'C001', 'CardName' => 'New Customer']),
         $pool->as('update')->patch("Items('A001')", ['ItemName' => 'Updated Item']),
@@ -177,7 +177,7 @@ $responses = SapBOne::pool(function ($pool) {
 ### G. Explicit Logout
 
 ```php
-SapBOne::logout();
+SapB1::logout();
 ```
 
 ## Testing

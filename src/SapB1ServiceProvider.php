@@ -29,7 +29,7 @@ class SapB1ServiceProvider extends PackageServiceProvider
     #[Override]
     public function bootingPackage(): void
     {
-        Http::macro('SapBOne', function (#[SensitiveParameter] array $config = []): SapB1Client {
+        Http::macro('SapB1', function (#[SensitiveParameter] array $config = []): SapB1Client {
             return new SapB1Client($config);
         });
     }

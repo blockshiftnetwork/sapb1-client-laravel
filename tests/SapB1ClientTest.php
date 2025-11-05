@@ -1,6 +1,6 @@
 <?php
 
-use BlockshiftNetwork\SapB1Client\Facades\SapBOne;
+use BlockshiftNetwork\SapB1Client\Facades\SapB1;
 use BlockshiftNetwork\SapB1Client\ODataQuery;
 use BlockshiftNetwork\SapB1Client\SapB1Client;
 use Illuminate\Support\Facades\Cache;
@@ -33,7 +33,7 @@ beforeEach(function () {
 });
 
 it('can login and cache the session', function () {
-    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager');
+    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager');
 
     expect(Cache::has($sessionKey))->toBeFalse();
 
@@ -46,7 +46,7 @@ it('can login and cache the session', function () {
 it('validates required configuration', function () {
     Cache::flush();
 
-    expect(fn () => new SapB1Client([
+    expect(fn() => new SapB1Client([
         'server' => '',
         'database' => '',
         'username' => '',
@@ -63,7 +63,7 @@ it('can make get requests', function () {
 });
 
 it('can use facade to make get requests', function () {
-    $response = SapBOne::get('Items');
+    $response = SapB1::get('Items');
 
     expect($response->successful())->toBeTrue();
     expect($response->json('value'))->toHaveCount(2);
@@ -165,7 +165,7 @@ it('custom headers are only applied to the next request', function () {
 
     // Verificar que solo el primer request tiene el header
     $itemsRequests = collect(Http::recorded())
-        ->filter(fn ($record) => str_contains($record[0]->url(), 'Items'))
+        ->filter(fn($record) => str_contains($record[0]->url(), 'Items'))
         ->values();
 
     expect($itemsRequests)->toHaveCount(2);
@@ -174,7 +174,7 @@ it('custom headers are only applied to the next request', function () {
 });
 
 it('can logout and clear the session', function () {
-    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager');
+    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager');
 
     $client = new SapB1Client;
     expect(Cache::has($sessionKey))->toBeTrue();
@@ -185,7 +185,7 @@ it('can logout and clear the session', function () {
 });
 
 it('can use the facade', function () {
-    $response = SapBOne::get('Items');
+    $response = SapB1::get('Items');
 
     expect($response->successful())->toBeTrue();
     expect($response->json('value'))->toHaveCount(2);
@@ -197,7 +197,7 @@ it('facade can make odata queries', function () {
         ->where('CardType', 'cCustomer')
         ->top(10);
 
-    $response = SapBOne::odataQuery('BusinessPartners', $query);
+    $response = SapB1::odataQuery('BusinessPartners', $query);
 
     expect($response->successful())->toBeTrue();
 });
@@ -212,7 +212,7 @@ it('facade can use custom headers', function () {
     });
 
     Cache::flush();
-    SapBOne::withHeaders(['X-Custom-Header' => 'TestValue'])->get('Items');
+    SapB1::withHeaders(['X-Custom-Header' => 'TestValue'])->get('Items');
 
     Http::assertSent(function ($request) {
         return str_contains($request->url(), 'Items') && $request->hasHeader('X-Custom-Header', 'TestValue');
@@ -231,7 +231,7 @@ it('can use sendRequestWithCallback', function () {
 });
 
 it('facade can use sendRequestWithCallback', function () {
-    $response = SapBOne::sendRequestWithCallback(function ($httpClient) {
+    $response = SapB1::sendRequestWithCallback(function ($httpClient) {
         return $httpClient->get('Items', ['$top' => 1]);
     });
 
@@ -239,15 +239,15 @@ it('facade can use sendRequestWithCallback', function () {
     expect($response->json())->toHaveKey('value');
 });
 
-it('can use http macro SapBOne', function () {
-    $response = Http::SapBOne([])->get('Items');
+it('can use http macro SapB1', function () {
+    $response = Http::SapB1([])->get('Items');
 
     expect($response->successful())->toBeTrue();
     expect($response->json('value'))->toHaveCount(2);
 });
 
 it('http macro can accept custom config', function () {
-    $customClient = Http::SapBOne([
+    $customClient = Http::SapB1([
         'server' => 'https://custom-server/b1s/v1/',
         'database' => 'CUSTOM_DB',
         'username' => 'custom_user',
@@ -275,7 +275,7 @@ it('can make concurrent requests with pool', function () {
 });
 
 it('facade can make concurrent requests with pool', function () {
-    $responses = SapBOne::pool(function ($pool) {
+    $responses = SapB1::pool(function ($pool) {
         return [
             $pool->as('items')->get('Items', ['$top' => 2]),
             $pool->as('partners')->get('BusinessPartners'),
