@@ -2,11 +2,22 @@
     "name": "blockshiftnetwork/sapb1-client",
     "description": "A robust, production-grade Laravel package for SAP Business One HTTP integration, supporting both OData and custom (non-OData) SAP Service Layer (SML) endpoints.",
     "keywords": [
-        "BlockshiftNetwork",
+        "blockshift-network",
+        "blockshif-labs",
         "laravel",
-        "sapb1-client"
+        "sapb1-client",
+        "sap-business-one",
+        "sap-b1",
+        "odata",
+        "service-layer",
+        "sml",
+        "api-client",
+        "http-client",
+        "query-builder",
+        "erp",
+        "sap"
     ],
-    "homepage": "https://github.com/blockshiftnetwork/sapb1-client",
+    "homepage": "https://github.com/blockshiftnetwork/sapb1-client-laravel",
     "license": "MIT",
     "authors": [
         {
