@@ -13,6 +13,7 @@ beforeEach(function () {
     config()->set('sapb1-client.password', 'password');
     config()->set('sapb1-client.cache_ttl', 1800);
     config()->set('sapb1-client.verify_ssl', false);
+    config()->set('sapb1-client.pool_size', 1);
 });
 
 it('registers sap b1 client as singleton', function () {
