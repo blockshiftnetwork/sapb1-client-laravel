@@ -26,7 +26,7 @@ class SapB1ServiceProvider extends PackageServiceProvider
         $this->app->scoped(SapB1Client::class, function ($app): SapB1Client {
             // Load pool size from config
             $poolSize = (int) config('sapb1-client.pool_size');
-            
+
             // Select random index for load balancing
             $index = ($poolSize > 1) ? rand(0, $poolSize - 1) : 0;
 

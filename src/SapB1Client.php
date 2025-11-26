@@ -27,7 +27,7 @@ class SapB1Client
     public function __construct(#[SensitiveParameter] array $config = [], ?int $sessionIndex = null)
     {
         $this->config = array_merge(config('sapb1-client', []), $config);
-        
+
         // Set session index (Priority: Constructor -> Config -> Default 0)
         if ($sessionIndex !== null) {
             $this->sessionIndex = $sessionIndex;
@@ -74,7 +74,7 @@ class SapB1Client
     protected function getSessionKey(): string
     {
         $baseKey = 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
-        
+
         // Append index to support multiple sessions in the pool
         return "{$baseKey}:{$this->sessionIndex}";
     }
@@ -113,16 +113,16 @@ class SapB1Client
         // Get cookies from response
         $cookies = $response->cookies();
         $cookieParts = [];
-        
+
         // Extract raw cookie string or reconstruct it properly
         // The Set-Cookie header might be an array or string
         // But the most reliable way for subsequent requests is using the CookieJar or reconstruction
-        
+
         // Simple reconstruction for the header
         foreach ($cookies as $cookie) {
-            $cookieParts[] = $cookie->getName() . '=' . $cookie->getValue();
+            $cookieParts[] = $cookie->getName().'='.$cookie->getValue();
         }
-        
+
         $this->sessionCookie = implode('; ', $cookieParts);
 
         $sessionKey = $this->getSessionKey();
@@ -198,7 +198,7 @@ class SapB1Client
             try {
                 // Force clear cache for THIS specific index
                 Cache::forget($this->getSessionKey());
-                
+
                 $this->performLogin();
                 $response = $this->sendRequest($method, $endpoint, $data);
             } finally {

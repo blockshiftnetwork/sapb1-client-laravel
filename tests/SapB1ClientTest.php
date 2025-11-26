@@ -34,7 +34,7 @@ beforeEach(function () {
 });
 
 it('can login and cache the session', function () {
-    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
 
     expect(Cache::has($sessionKey))->toBeFalse();
 
@@ -47,12 +47,12 @@ it('can login and cache the session', function () {
 it('stores and sends session cookies correctly', function () {
     // This test verifies that cookies from login are stored and sent in subsequent requests
     // The beforeEach already sets up a fake with B1SESSION cookie
-    
+
     $client = new SapB1Client([], 0);
     $client->get('Items');
 
     // Verify session cache contains the session cookie
-    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager'). ':0';
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
     $cachedCookie = Cache::get($sessionKey);
 
     expect($cachedCookie)->toContain('B1SESSION=');
@@ -200,7 +200,7 @@ it('custom headers are only applied to the next request', function () {
 });
 
 it('can logout and clear the session', function () {
-    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
 
     $client = new SapB1Client;
     expect(Cache::has($sessionKey))->toBeTrue();
@@ -338,33 +338,33 @@ it('pool supports all http methods', function () {
 
 it('uses distinct sessions for different indices', function () {
     $baseKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager');
-    
+
     // Client 1 (Index 0)
     $client1 = new SapB1Client([], 0);
     expect(Cache::has("{$baseKey}:0"))->toBeTrue();
-    
+
     // Client 2 (Index 1)
     $client2 = new SapB1Client([], 1);
     expect(Cache::has("{$baseKey}:1"))->toBeTrue();
-    
+
     // Ensure keys are distinct
     expect("{$baseKey}:0")->not->toBe("{$baseKey}:1");
 });
 
 it('automatically selects random index when pool size > 1', function () {
     config()->set('sapb1-client.pool_size', 5);
-    
-    // Mocking rand() isn't easy in global scope without namespacing tricks, 
+
+    // Mocking rand() isn't easy in global scope without namespacing tricks,
     // but we can check if the session key generated ends in a valid index
-    
+
     $client = new SapB1Client;
-    
+
     // We access the protected sessionIndex via reflection to verify
     $reflection = new ReflectionClass($client);
     $property = $reflection->getProperty('sessionIndex');
     $property->setAccessible(true);
     $index = $property->getValue($client);
-    
+
     expect($index)->toBeGreaterThanOrEqual(0);
     expect($index)->toBeLessThan(5);
 });
