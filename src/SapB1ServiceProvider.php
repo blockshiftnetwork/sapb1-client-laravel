@@ -24,7 +24,13 @@ class SapB1ServiceProvider extends PackageServiceProvider
         // Use scoped binding instead of singleton for Octane compatibility
         // This ensures each request gets a fresh instance in long-running processes
         $this->app->scoped(SapB1Client::class, function ($app): SapB1Client {
-            return new SapB1Client;
+            // Load pool size from config
+            $poolSize = (int) config('sapb1-client.pool_size');
+            
+            // Select random index for load balancing
+            $index = ($poolSize > 1) ? rand(0, $poolSize - 1) : 0;
+
+            return new SapB1Client([], $index);
         });
     }
 
@@ -47,10 +53,9 @@ class SapB1ServiceProvider extends PackageServiceProvider
     protected function configureOctane(): void
     {
         // Flush resolved instances between requests to prevent state leakage
-        if (class_exists(\Laravel\Octane\Octane::class)) {
-            \Laravel\Octane\Octane::flushState([
-                SapB1Client::class,
-            ]);
-        }
+        // We use the container binding to hook into Octane's events if needed,
+        // but since we use scoped(), Laravel Octane handles it automatically.
+        // However, if we wanted to force flush static states, we'd do it here.
+        // For now, scoped binding is sufficient.
     }
 }

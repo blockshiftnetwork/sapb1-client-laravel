@@ -22,11 +22,26 @@ class SapB1Client
 
     protected bool $isRetryingWithNewSession = false;
 
-    public function __construct(#[SensitiveParameter] array $config = [])
+    protected int $sessionIndex = 0;
+
+    public function __construct(#[SensitiveParameter] array $config = [], ?int $sessionIndex = null)
     {
         $this->config = array_merge(config('sapb1-client', []), $config);
+        
+        // Set session index (Priority: Constructor -> Config -> Default 0)
+        if ($sessionIndex !== null) {
+            $this->sessionIndex = $sessionIndex;
+        } elseif (isset($this->config['session_index'])) {
+            $this->sessionIndex = (int) $this->config['session_index'];
+        } else {
+            // Random selection if pool enabled and no specific index requested
+            $poolSize = (int) ($this->config['pool_size'] ?? 1);
+            if ($poolSize > 1) {
+                $this->sessionIndex = rand(0, $poolSize - 1);
+            }
+        }
 
-        // Validar configuración antes de hacer cualquier cosa
+        // Validate configuration before doing anything
         $this->validateConfig();
 
         $this->http = Http::withOptions([
@@ -58,7 +73,10 @@ class SapB1Client
 
     protected function getSessionKey(): string
     {
-        return 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
+        $baseKey = 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
+        
+        // Append index to support multiple sessions in the pool
+        return "{$baseKey}:{$this->sessionIndex}";
     }
 
     protected function login(): void
@@ -80,6 +98,7 @@ class SapB1Client
      */
     protected function performLogin(): void
     {
+        // Avoid infinite retry loops if login itself fails
         $response = $this->http->retry(3, 100)
             ->post('Login', [
                 'CompanyDB' => $this->config['database'],
@@ -88,10 +107,24 @@ class SapB1Client
             ]);
 
         if ($response->failed()) {
-            throw new Exception('SAP B1 Login Failed: '.$response->body());
+            throw new Exception("SAP B1 Login Failed (Index: {$this->sessionIndex}): ".$response->body());
         }
 
-        $this->sessionCookie = $response->header('Set-Cookie');
+        // Get cookies from response
+        $cookies = $response->cookies();
+        $cookieParts = [];
+        
+        // Extract raw cookie string or reconstruct it properly
+        // The Set-Cookie header might be an array or string
+        // But the most reliable way for subsequent requests is using the CookieJar or reconstruction
+        
+        // Simple reconstruction for the header
+        foreach ($cookies as $cookie) {
+            $cookieParts[] = $cookie->getName() . '=' . $cookie->getValue();
+        }
+        
+        $this->sessionCookie = implode('; ', $cookieParts);
+
         $sessionKey = $this->getSessionKey();
         Cache::put($sessionKey, $this->sessionCookie, $this->config['cache_ttl']);
     }
@@ -133,7 +166,7 @@ class SapB1Client
 
     private function sendRequest(string $method, string $endpoint, array $data = []): Response
     {
-        // Crear una nueva instancia para evitar acumulación de headers
+        // Create a new instance to avoid header accumulation
         $request = Http::withOptions([
             'base_uri' => $this->config['server'],
             'verify' => $this->config['verify_ssl'],
@@ -148,7 +181,7 @@ class SapB1Client
 
         $this->headers = [];
 
-        // Soportar todos los métodos HTTP
+        // Support all HTTP methods
         $response = match ($method) {
             'get' => $request->get($endpoint, $data),
             'post' => $request->post($endpoint, $data),
@@ -163,6 +196,9 @@ class SapB1Client
             $this->isRetryingWithNewSession = true;
 
             try {
+                // Force clear cache for THIS specific index
+                Cache::forget($this->getSessionKey());
+                
                 $this->performLogin();
                 $response = $this->sendRequest($method, $endpoint, $data);
             } finally {
@@ -209,12 +245,12 @@ class SapB1Client
 
     public function sendRequestWithCallback(callable $callback): Response
     {
-        // Usar this->http para que Http::fake() funcione correctamente en tests
-        // pero agregamos headers de manera temporal
+        // Use this->http so Http::fake() works correctly in tests
+        // but we add headers temporarily
         $customHeaders = $this->headers;
         $this->headers = [];
 
-        // Crear un request temporal con todos los headers necesarios
+        // Create a temporary request with all necessary headers
         $request = $this->http
             ->withHeaders(['Cookie' => $this->sessionCookie])
             ->withHeaders($customHeaders);
@@ -229,20 +265,6 @@ class SapB1Client
      *
      * @param  callable  $callback  Callback that receives a configured pool helper
      * @return array<int|string, Response>
-     *
-     * @example
-     * ```php
-     * $responses = SapB1::pool(function ($pool) {
-     *     return [
-     *         $pool->as('items')->get('Items', ['$top' => 5]),
-     *         $pool->as('partners')->get('BusinessPartners', ['$top' => 5]),
-     *         $pool->as('orders')->get('Orders', ['$top' => 5]),
-     *     ];
-     * });
-     *
-     * $items = $responses['items']->json('value');
-     * $partners = $responses['partners']->json('value');
-     * ```
      */
     public function pool(callable $callback): array
     {
@@ -254,7 +276,7 @@ class SapB1Client
         $config = $this->config;
 
         return Http::pool(function (Pool $pool) use ($callback, $sessionCookie, $config) {
-            // Crear un helper simple que configura cada request del pool
+            // Create a simple helper that configures each request in the pool
             $poolHelper = new class($pool, $sessionCookie, $config)
             {
                 public function __construct(
@@ -287,15 +309,15 @@ class SapB1Client
 
                 public function __call(string $method, array $arguments)
                 {
-                    // Obtener el pool base (con o sin key)
+                    // Get base pool (with or without key)
                     $base = $this->currentKey !== null
                         ? $this->pool->as($this->currentKey)
                         : $this->pool;
 
-                    // Limpiar el key
+                    // Clear key
                     $this->currentKey = null;
 
-                    // Configurar y ejecutar el método
+                    // Configure and execute method
                     return $this->configureRequest($base)->$method(...$arguments);
                 }
             };

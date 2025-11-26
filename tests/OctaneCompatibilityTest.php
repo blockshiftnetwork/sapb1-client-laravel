@@ -63,9 +63,11 @@ it('automatically renews session on 403 forbidden response', function () {
 });
 
 it('clears cached session when forcing new login', function () {
-    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager');
+    // Assuming index 0 by default
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
 
     Cache::flush();
+
 
     Http::fake([
         '*Login*' => Http::sequence()
@@ -83,6 +85,7 @@ it('clears cached session when forcing new login', function () {
 
     // Trigger session renewal
     $client->get('Items');
+
 
     // Session should be updated in cache
     expect(Cache::get($sessionKey))->toContain('second_cookie');
@@ -152,4 +155,40 @@ it('facade works with session renewal', function () {
 
     expect($response->successful())->toBeTrue();
     expect($response->json('value.0.WarehouseCode'))->toBe('WH01');
+});
+
+it('stores and sends ROUTEID cookie for sticky sessions', function () {
+    Cache::flush();
+
+    Http::fake([
+        '*Login*' => Http::response(
+            ['SessionId' => 'sticky_id'],
+            200,
+            ['Set-Cookie' => ['B1SESSION=sticky_session; path=/; HttpOnly', 'ROUTEID=.node5; path=/']]
+        ),
+        '*Items*' => Http::response(['value' => []], 200),
+        '*' => Http::response('Not Found', 404),
+    ]);
+
+    // Force index 0 for predictability
+    $client = new SapB1Client([], 0);
+    $client->get('Items');
+
+    // Verify session cache contains both B1SESSION and ROUTEID
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager'). ':0';
+    $cachedCookie = Cache::get($sessionKey);
+
+    expect($cachedCookie)->toContain('B1SESSION=sticky_session');
+    expect($cachedCookie)->toContain('ROUTEID=.node5');
+
+    // Verify ROUTEID is sent in subsequent requests
+    Http::assertSent(function ($request) {
+        if (str_contains($request->url(), 'Items')) {
+            $cookieHeader = $request->header('Cookie')[0] ?? '';
+
+            return str_contains($cookieHeader, 'ROUTEID=.node5');
+        }
+
+        return true;
+    });
 });
