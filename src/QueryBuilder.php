@@ -27,15 +27,19 @@ class QueryBuilder extends ODataQuery
     /**
      * Alias for run() - more familiar for Eloquent users.
      */
-    public function get(): Response
+    public function get(string|int|null $id = null): Response
     {
+        if ($id !== null) {
+            return $this->find($id);
+        }
+
         return $this->run();
     }
 
-    public function find($id): self
+    public function find(string | int $id): Response
     {
         $this->entity = $this->entity . '(' . $id . ')';
 
-        return $this;
+        return $this->run();
     }
 }
