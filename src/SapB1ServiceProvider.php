@@ -57,7 +57,7 @@ class SapB1ServiceProvider extends PackageServiceProvider
         });
 
         Response::macro('first', function (mixed $default = null): mixed {
-            return ( (object) [...$this->json('value')[0]] ) ?? $default;
+            return ((object) [...$this->json('value')[0]]) ?? $default;
         });
     }
 

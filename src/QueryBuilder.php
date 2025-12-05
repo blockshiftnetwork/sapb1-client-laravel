@@ -36,9 +36,9 @@ class QueryBuilder extends ODataQuery
         return $this->run();
     }
 
-    public function find(string | int $id): mixed
+    public function find(string|int $id): mixed
     {
-        $this->entity = $this->entity . '(' . $id . ')';
+        $this->entity = $this->entity.'('.$id.')';
 
         return $this->run()->object();
     }
