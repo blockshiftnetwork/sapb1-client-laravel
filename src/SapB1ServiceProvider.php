@@ -2,12 +2,12 @@
 
 namespace BlockshiftNetwork\SapB1Client;
 
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Override;
 use SensitiveParameter;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Illuminate\Http\Client\Response;
 
 class SapB1ServiceProvider extends PackageServiceProvider
 {

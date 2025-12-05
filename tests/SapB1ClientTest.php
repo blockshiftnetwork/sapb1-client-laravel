@@ -35,7 +35,7 @@ describe('main', function () {
     });
 
     it('can login and cache the session', function () {
-        $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
+        $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
 
         expect(Cache::has($sessionKey))->toBeFalse();
 
@@ -53,7 +53,7 @@ describe('main', function () {
         $client->get('Items');
 
         // Verify session cache contains the session cookie
-        $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
+        $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
         $cachedCookie = Cache::get($sessionKey);
 
         expect($cachedCookie)->toContain('B1SESSION=');
@@ -73,7 +73,7 @@ describe('main', function () {
     it('validates required configuration', function () {
         Cache::flush();
 
-        expect(fn() => new SapB1Client([
+        expect(fn () => new SapB1Client([
             'server' => '',
             'database' => '',
             'username' => '',
@@ -199,7 +199,7 @@ describe('main', function () {
 
         // Verificar que solo el primer request tiene el header
         $itemsRequests = collect(Http::recorded())
-            ->filter(fn($record) => str_contains($record[0]->url(), 'Items'))
+            ->filter(fn ($record) => str_contains($record[0]->url(), 'Items'))
             ->values();
 
         expect($itemsRequests)->toHaveCount(2);
@@ -208,7 +208,7 @@ describe('main', function () {
     });
 
     it('can logout and clear the session', function () {
-        $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
+        $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
 
         $client = new SapB1Client;
         expect(Cache::has($sessionKey))->toBeTrue();
@@ -345,7 +345,7 @@ describe('main', function () {
     });
 
     it('uses distinct sessions for different indices', function () {
-        $baseKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager');
+        $baseKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager');
 
         // Client 1 (Index 0)
         $client1 = new SapB1Client([], 0);
@@ -377,7 +377,6 @@ describe('main', function () {
         expect($index)->toBeLessThan(5);
     });
 });
-
 
 // ============================================
 // QueryBuilder Tests

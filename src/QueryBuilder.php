@@ -7,6 +7,7 @@ use Illuminate\Http\Client\Response;
 class QueryBuilder extends ODataQuery
 {
     protected SapB1Client $client;
+
     protected string $entity;
 
     public function __construct(SapB1Client $client, string $entity)
