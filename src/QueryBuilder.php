@@ -36,7 +36,7 @@ class QueryBuilder extends ODataQuery
         return $this->run();
     }
 
-    public function find(string | int $id): Response
+    public function find(string|int $id): Response
     {
         $this->entity = $this->entity.'('.$id.')';
 
