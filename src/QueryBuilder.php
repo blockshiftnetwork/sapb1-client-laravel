@@ -31,4 +31,11 @@ class QueryBuilder extends ODataQuery
     {
         return $this->run();
     }
+
+    public function find($id): self
+    {
+        $this->entity = $this->entity . '(' . $id . ')';
+
+        return $this;
+    }
 }
