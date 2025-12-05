@@ -164,6 +164,11 @@ class SapB1Client
         return $this;
     }
 
+    public function query(string $entity): QueryBuilder
+    {
+        return new QueryBuilder($this, $entity);
+    }
+
     private function sendRequest(string $method, string $endpoint, array $data = []): Response
     {
         // Create a new instance to avoid header accumulation

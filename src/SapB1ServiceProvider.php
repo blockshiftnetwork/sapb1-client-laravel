@@ -7,6 +7,7 @@ use Override;
 use SensitiveParameter;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Illuminate\Http\Client\Response;
 
 class SapB1ServiceProvider extends PackageServiceProvider
 {
@@ -41,10 +42,19 @@ class SapB1ServiceProvider extends PackageServiceProvider
             return new SapB1Client($config);
         });
 
+        $this->registerResponseMacros();
+
         // Register Octane state cleanup listeners
         if ($this->app->resolved('octane')) {
             $this->configureOctane();
         }
+    }
+
+    protected function registerResponseMacros(): void
+    {
+        Response::macro('value', function (mixed $default = null): mixed {
+            return $this->json('value', $default);
+        });
     }
 
     /**
