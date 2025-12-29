@@ -27,13 +27,12 @@ class InArray extends Filter
     #[Override]
     public function execute(): string
     {
-        $group = '';
+        $escapedValues = [];
 
-        foreach ($this->collection as $idx => $value) {
-            $op = ($idx < count($this->collection) - 1) ? ' or ' : '';
-            $group .= $this->field.' eq '.$this->escape($value).$op;
+        foreach ($this->collection as $value) {
+            $escapedValues[] = $this->field.' eq '.$this->escape($value);
         }
 
-        return '('.$group.')';
+        return '('.implode(' or ', $escapedValues).')';
     }
 }

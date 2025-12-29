@@ -28,13 +28,12 @@ class NotInArray extends Filter
     #[Override]
     public function execute(): string
     {
-        $group = '';
+        $escapedValues = [];
 
-        foreach ($this->collection as $idx => $value) {
-            $op = ($idx < count($this->collection) - 1) ? ' and ' : '';
-            $group .= $this->field.' ne '.$this->escape($value).$op;
+        foreach ($this->collection as $value) {
+            $escapedValues[] = $this->field.' ne '.$this->escape($value);
         }
 
-        return '('.$group.')';
+        return '('.implode(' and ', $escapedValues).')';
     }
 }
