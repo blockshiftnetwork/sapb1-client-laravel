@@ -111,7 +111,7 @@ it('does not retry infinitely on persistent 401 errors', function () {
     Http::assertSentCount(4);
 });
 
-it('works correctly with scoped binding for octane compatibility', function () {
+it('works correctly with singleton binding for octane compatibility', function () {
     Cache::flush();
 
     Http::fake([
@@ -120,20 +120,47 @@ it('works correctly with scoped binding for octane compatibility', function () {
         '*' => Http::response('Not Found', 404),
     ]);
 
-    // First "request" - create new instance
+    // First request - get singleton instance
     $client1 = app(SapB1Client::class);
     $response1 = $client1->get('Items');
 
-    // Second "request" - should get same scoped instance within same request
+    // Second request within same Octane worker - should get same singleton instance
     $client2 = app(SapB1Client::class);
-    expect($client1)->toBe($client2);
+    expect($client1)->toBe($client2); // Same instance
 
-    // Simulate new request context by flushing the scoped instances
-    app()->forgetScopedInstances();
+    // Reset request state to simulate new request
+    $client2->resetForNewRequest();
 
-    // Third "request" - should get a fresh instance (simulating new Octane request)
+    // Third request - same instance but with reset state
     $client3 = app(SapB1Client::class);
-    expect($client3)->not->toBe($client1);
+    expect($client3)->toBe($client1); // Still same singleton instance
+
+    // Make a request to verify functionality after reset
+    $response2 = $client3->get('Items');
+    expect($response2->successful())->toBeTrue();
+});
+
+it('resets request-specific state on each octane request', function () {
+    Cache::flush();
+
+    Http::fake([
+        '*Login*' => Http::response(['SessionId' => 'session_id'], 200, ['Set-Cookie' => 'B1SESSION=session_cookie;']),
+        '*Items*' => Http::response(['value' => [['ItemCode' => 'A001']]], 200),
+        '*' => Http::response('Not Found', 404),
+    ]);
+
+    $client = app(SapB1Client::class);
+
+    // Make first request
+    $response = $client->get('Items');
+    expect($response->successful())->toBeTrue();
+
+    // Simulate new request
+    $client->resetForNewRequest();
+
+    // Make another request - should work fine with clean state
+    $response2 = $client->get('Items');
+    expect($response2->successful())->toBeTrue();
 });
 
 it('facade works with session renewal', function () {
@@ -190,4 +217,42 @@ it('stores and sends ROUTEID cookie for sticky sessions', function () {
 
         return true;
     });
+});
+
+it('singleton does not cache expired sessions across requests', function () {
+    Cache::flush();
+
+    Http::fake([
+        '*Login*' => Http::sequence()
+            ->push(['SessionId' => 'session1'], 200, ['Set-Cookie' => 'B1SESSION=cookie1;'])
+            ->push(['SessionId' => 'session2'], 200, ['Set-Cookie' => 'B1SESSION=cookie2;']),
+        '*Items*' => Http::response(['value' => [['ItemCode' => 'A001']]], 200),
+        '*' => Http::response('Not Found', 404),
+    ]);
+
+    $client = app(SapB1Client::class);
+
+    // First request - gets session1
+    $response1 = $client->get('Items');
+    expect($response1->successful())->toBeTrue();
+
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
+    $cachedCookie = Cache::get($sessionKey);
+    expect($cachedCookie)->not->toBeNull()->toContain('cookie1');
+
+    // Simulate cache expiration (session expired in SAP)
+    Cache::forget($sessionKey);
+
+    // Simulate new request
+    $client->resetForNewRequest();
+
+    // Second request - should get new session because cache is empty
+    $response2 = $client->get('Items');
+    expect($response2->successful())->toBeTrue();
+
+    $cachedCookie2 = Cache::get($sessionKey);
+    expect($cachedCookie2)->not->toBeNull()->toContain('cookie2');
+
+    // Verify login was called twice (once per session)
+    Http::assertSentCount(4); // 2 logins + 2 requests
 });

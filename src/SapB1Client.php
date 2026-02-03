@@ -44,8 +44,11 @@ class SapB1Client
         // Validate configuration before doing anything
         $this->validateConfig();
 
+        // Normalize server URL to ensure trailing slash for Guzzle
+        $server = $this->normalizeServerUrl($this->config['server']);
+
         $this->http = Http::withOptions([
-            'base_uri' => $this->config['server'],
+            'base_uri' => $server,
             'verify' => $this->config['verify_ssl'] ?? true,
         ])->withHeaders([
             'Accept' => 'application/json',
@@ -71,12 +74,35 @@ class SapB1Client
         }
     }
 
+    /**
+     * Normalize server URL to ensure consistent trailing slash behavior.
+     * This prevents Guzzle URL construction issues when SAPB1_SERVER doesn't end with "/".
+     */
+    protected function normalizeServerUrl(string $server): string
+    {
+        // Remove trailing slash if present, then add it back
+        // This ensures we always have exactly one trailing slash
+        return rtrim($server, '/').'/';
+    }
+
     protected function getSessionKey(): string
     {
         $baseKey = 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
 
         // Append index to support multiple sessions in the pool
         return "{$baseKey}:{$this->sessionIndex}";
+    }
+
+    /**
+     * Reset request-specific state.
+     * Call this method at the beginning of each request when using singleton binding.
+     */
+    public function resetForNewRequest(): void
+    {
+        $this->headers = [];
+        $this->isRetryingWithNewSession = false;
+        // Note: sessionCookie is NOT reset here because it's reused across requests
+        // if the session is still valid in cache
     }
 
     protected function login(): void
@@ -166,9 +192,15 @@ class SapB1Client
 
     private function sendRequest(string $method, string $endpoint, array $data = []): Response
     {
+        // Check cache and update sessionCookie if needed
+        $this->login();
+
+        // Normalize server URL to ensure trailing slash
+        $server = $this->normalizeServerUrl($this->config['server']);
+
         // Create a new instance to avoid header accumulation
         $request = Http::withOptions([
-            'base_uri' => $this->config['server'],
+            'base_uri' => $server,
             'verify' => $this->config['verify_ssl'],
         ])->withHeaders(array_merge(
             [
@@ -274,15 +306,17 @@ class SapB1Client
 
         $sessionCookie = $this->sessionCookie;
         $config = $this->config;
+        $server = $this->normalizeServerUrl($config['server']);
 
-        return Http::pool(function (Pool $pool) use ($callback, $sessionCookie, $config) {
+        return Http::pool(function (Pool $pool) use ($callback, $sessionCookie, $config, $server) {
             // Create a simple helper that configures each request in the pool
-            $poolHelper = new class($pool, $sessionCookie, $config)
+            $poolHelper = new class($pool, $sessionCookie, $config, $server)
             {
                 public function __construct(
                     private Pool $pool,
                     private string $sessionCookie,
                     private array $config,
+                    private string $server,
                     private ?string $currentKey = null
                 ) {}
 
@@ -290,7 +324,7 @@ class SapB1Client
                 {
                     return $poolOrRequest
                         ->withOptions([
-                            'base_uri' => $this->config['server'],
+                            'base_uri' => $this->server,
                             'verify' => $this->config['verify_ssl'],
                         ])
                         ->withHeaders([
