@@ -2,7 +2,7 @@
 
 namespace BlockshiftNetwork\SapB1Client;
 
-use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Override;
 use SensitiveParameter;
@@ -22,9 +22,10 @@ class SapB1ServiceProvider extends PackageServiceProvider
     #[Override]
     public function registeringPackage(): void
     {
-        // Use scoped binding instead of singleton for Octane compatibility
-        // This ensures each request gets a fresh instance in long-running processes
-        $this->app->scoped(SapB1Client::class, function ($app): SapB1Client {
+        // Use singleton for performance (instance reuse across requests)
+        // Session state is managed via cache (not instance properties)
+        // Request-specific state (headers) is reset between requests
+        $this->app->singleton(SapB1Client::class, function (): SapB1Client {
             // Load pool size from config
             $poolSize = (int) config('sapb1-client.pool_size');
 
@@ -42,12 +43,8 @@ class SapB1ServiceProvider extends PackageServiceProvider
             return new SapB1Client($config);
         });
 
-        $this->registerResponseMacros();
-
-        // Register Octane state cleanup listeners
-        if ($this->app->resolved('octane')) {
-            $this->configureOctane();
-        }
+        // Always configure Octane listeners if Octane is available
+        $this->configureOctane();
     }
 
     protected function registerResponseMacros(): void
@@ -66,10 +63,12 @@ class SapB1ServiceProvider extends PackageServiceProvider
      */
     protected function configureOctane(): void
     {
-        // Flush resolved instances between requests to prevent state leakage
-        // We use the container binding to hook into Octane's events if needed,
-        // but since we use scoped(), Laravel Octane handles it automatically.
-        // However, if we wanted to force flush static states, we'd do it here.
-        // For now, scoped binding is sufficient.
+        if (class_exists('\Laravel\Octane\Events\RequestReceived')) {
+            Event::listen(\Laravel\Octane\Events\RequestReceived::class, function () {
+                // Reset request-specific state at the start of each request
+                $client = app(SapB1Client::class);
+                $client->resetForNewRequest();
+            });
+        }
     }
 }

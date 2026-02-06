@@ -594,3 +594,49 @@ describe('QueryBuilder', function () {
         expect($response->value('default'))->toBe('default');
     });
 });
+
+it('normalizes server url to ensure trailing slash', function () {
+    // Test URL without trailing slash
+    config()->set('sapb1-client.server', 'https://sap-server/b1s/v1');
+
+    Http::fake([
+        '*Login*' => Http::response(['SessionId' => 'test_session'], 200, ['Set-Cookie' => 'B1SESSION=test_cookie;']),
+        '*Items*' => Http::response(['value' => [['ItemCode' => 'A001']]], 200),
+        '*' => Http::response('Not Found', 404),
+    ]);
+
+    $client = new SapB1Client;
+    $response = $client->get('Items');
+
+    expect($response->successful())->toBeTrue();
+
+    // Verify that requests were made with properly normalized URL (trailing slash)
+    Http::assertSent(function ($request) {
+        // Check that the URL is constructed correctly
+        return str_contains($request->url(), 'b1s/v1/Items');
+    });
+});
+
+it('handles server url with trailing slash correctly', function () {
+    // Test URL with trailing slash
+    config()->set('sapb1-client.server', 'https://sap-server/b1s/v1/');
+
+    Http::fake([
+        '*Login*' => Http::response(['SessionId' => 'test_session'], 200, ['Set-Cookie' => 'B1SESSION=test_cookie;']),
+        '*Items*' => Http::response(['value' => [['ItemCode' => 'A001']]], 200),
+        '*' => Http::response('Not Found', 404),
+    ]);
+
+    $client = new SapB1Client;
+    $response = $client->get('Items');
+
+    expect($response->successful())->toBeTrue();
+
+    // Verify that requests were made with properly normalized URL (no double slashes)
+    Http::assertSent(function ($request) {
+        $url = $request->url();
+
+        // Should NOT have double slashes
+        return ! str_contains($url, 'b1s/v1//');
+    });
+});
