@@ -22,18 +22,11 @@ class SapB1ServiceProvider extends PackageServiceProvider
     #[Override]
     public function registeringPackage(): void
     {
-        // Use singleton for performance (instance reuse across requests)
-        // Session state is managed via cache (not instance properties)
-        // Request-specific state (headers) is reset between requests
-        $this->app->singleton(SapB1Client::class, function (): SapB1Client {
-            // Load pool size from config
-            $poolSize = (int) config('sapb1-client.pool_size');
-
-            // Select random index for load balancing
-            $index = ($poolSize > 1) ? rand(0, $poolSize - 1) : 0;
-
-            return new SapB1Client([], $index);
+        $this->app->singleton(SapB1Manager::class, function ($app): SapB1Manager {
+            return new SapB1Manager($app['config']['sapb1-client']);
         });
+
+        $this->app->alias(SapB1Manager::class, 'sapb1');
     }
 
     #[Override]
@@ -42,6 +35,10 @@ class SapB1ServiceProvider extends PackageServiceProvider
         Http::macro('SapB1', function (#[SensitiveParameter] array $config = []): SapB1Client {
             return new SapB1Client($config);
         });
+
+        // Register connection shorthand macros
+        SapB1Manager::macro('gateway', fn () => $this->connection('gateway'));
+        SapB1Manager::macro('serviceLayer', fn () => $this->connection('service_layer'));
 
         // Always configure Octane listeners if Octane is available
         $this->configureOctane();
@@ -54,9 +51,7 @@ class SapB1ServiceProvider extends PackageServiceProvider
     {
         if (class_exists('\Laravel\Octane\Events\RequestReceived')) {
             Event::listen(\Laravel\Octane\Events\RequestReceived::class, function () {
-                // Reset request-specific state at the start of each request
-                $client = app(SapB1Client::class);
-                $client->resetForNewRequest();
+                app(SapB1Manager::class)->resetAllForNewRequest();
             });
         }
     }

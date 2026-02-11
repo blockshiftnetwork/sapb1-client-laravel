@@ -26,7 +26,21 @@ class SapB1Client
 
     public function __construct(#[SensitiveParameter] array $config = [], ?int $sessionIndex = null)
     {
-        $this->config = array_merge(config('sapb1-client', []), $config);
+        // Resolve config: explicit config takes priority, then try global config
+        if (! empty($config)) {
+            $this->config = $config;
+        } else {
+            $globalConfig = config('sapb1-client', []);
+
+            // Support new multi-connection format
+            if (isset($globalConfig['connections'])) {
+                $default = $globalConfig['default'] ?? array_key_first($globalConfig['connections']);
+                $this->config = $globalConfig['connections'][$default] ?? [];
+            } else {
+                // Legacy flat config format
+                $this->config = $globalConfig;
+            }
+        }
 
         // Set session index (Priority: Constructor -> Config -> Default 0)
         if ($sessionIndex !== null) {
@@ -152,7 +166,7 @@ class SapB1Client
         $this->sessionCookie = implode('; ', $cookieParts);
 
         $sessionKey = $this->getSessionKey();
-        Cache::put($sessionKey, $this->sessionCookie, $this->config['cache_ttl']);
+        Cache::put($sessionKey, $this->sessionCookie, $this->config['cache_ttl'] ?? 1800);
     }
 
     /**
@@ -201,7 +215,7 @@ class SapB1Client
         // Create a new instance to avoid header accumulation
         $request = Http::withOptions([
             'base_uri' => $server,
-            'verify' => $this->config['verify_ssl'],
+            'verify' => $this->config['verify_ssl'] ?? true,
         ])->withHeaders(array_merge(
             [
                 'Accept' => 'application/json',
@@ -273,6 +287,16 @@ class SapB1Client
         }
 
         return $this->get($entity, $options);
+    }
+
+    /**
+     * Create a fluent OData query builder for the given entity.
+     *
+     * Usage: $client->query('BusinessPartners')->select('CardCode')->where('CardType', 'cCustomer')->get()
+     */
+    public function query(string $entity): SapB1Query
+    {
+        return new SapB1Query($this, $entity);
     }
 
     public function sendRequestWithCallback(callable $callback): Response

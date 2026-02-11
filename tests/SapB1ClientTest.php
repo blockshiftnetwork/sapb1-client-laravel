@@ -24,13 +24,20 @@ beforeEach(function () {
         '*' => Http::response('Not Found', 404),
     ]);
 
-    config()->set('sapb1-client.server', 'https://sap-server/b1s/v1/');
-    config()->set('sapb1-client.database', 'SBO_PROD');
-    config()->set('sapb1-client.username', 'manager');
-    config()->set('sapb1-client.password', 'password');
-    config()->set('sapb1-client.cache_ttl', 1800);
-    config()->set('sapb1-client.verify_ssl', false);
-    config()->set('sapb1-client.pool_size', 1);
+    config()->set('sapb1-client', [
+        'default' => 'service_layer',
+        'connections' => [
+            'service_layer' => [
+                'server' => 'https://sap-server/b1s/v1/',
+                'database' => 'SBO_PROD',
+                'username' => 'manager',
+                'password' => 'password',
+                'cache_ttl' => 1800,
+                'pool_size' => 1,
+                'verify_ssl' => false,
+            ],
+        ],
+    ]);
 });
 
 it('can login and cache the session', function () {
@@ -352,7 +359,7 @@ it('uses distinct sessions for different indices', function () {
 });
 
 it('automatically selects random index when pool size > 1', function () {
-    config()->set('sapb1-client.pool_size', 5);
+    config()->set('sapb1-client.connections.service_layer.pool_size', 5);
 
     // Mocking rand() isn't easy in global scope without namespacing tricks,
     // but we can check if the session key generated ends in a valid index
@@ -371,7 +378,7 @@ it('automatically selects random index when pool size > 1', function () {
 
 it('normalizes server url to ensure trailing slash', function () {
     // Test URL without trailing slash
-    config()->set('sapb1-client.server', 'https://sap-server/b1s/v1');
+    config()->set('sapb1-client.connections.service_layer.server', 'https://sap-server/b1s/v1');
 
     Http::fake([
         '*Login*' => Http::response(['SessionId' => 'test_session'], 200, ['Set-Cookie' => 'B1SESSION=test_cookie;']),
@@ -393,7 +400,7 @@ it('normalizes server url to ensure trailing slash', function () {
 
 it('handles server url with trailing slash correctly', function () {
     // Test URL with trailing slash
-    config()->set('sapb1-client.server', 'https://sap-server/b1s/v1/');
+    config()->set('sapb1-client.connections.service_layer.server', 'https://sap-server/b1s/v1/');
 
     Http::fake([
         '*Login*' => Http::response(['SessionId' => 'test_session'], 200, ['Set-Cookie' => 'B1SESSION=test_cookie;']),
