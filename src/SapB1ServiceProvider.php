@@ -37,8 +37,8 @@ class SapB1ServiceProvider extends PackageServiceProvider
         });
 
         // Register connection shorthand macros
-        SapB1Manager::macro('gateway', fn() => $this->connection('gateway'));
-        SapB1Manager::macro('serviceLayer', fn() => $this->connection('service_layer'));
+        SapB1Manager::macro('gateway', fn () => $this->connection('gateway'));
+        SapB1Manager::macro('serviceLayer', fn () => $this->connection('service_layer'));
 
         // Always configure Octane listeners if Octane is available
         $this->configureOctane();

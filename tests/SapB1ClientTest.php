@@ -41,7 +41,7 @@ beforeEach(function () {
 });
 
 it('can login and cache the session', function () {
-    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
 
     expect(Cache::has($sessionKey))->toBeFalse();
 
@@ -59,7 +59,7 @@ it('stores and sends session cookies correctly', function () {
     $client->get('Items');
 
     // Verify session cache contains the session cookie
-    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
     $cachedCookie = Cache::get($sessionKey);
 
     expect($cachedCookie)->toContain('B1SESSION=');
@@ -79,7 +79,7 @@ it('stores and sends session cookies correctly', function () {
 it('validates required configuration', function () {
     Cache::flush();
 
-    expect(fn() => new SapB1Client([
+    expect(fn () => new SapB1Client([
         'server' => '',
         'database' => '',
         'username' => '',
@@ -198,7 +198,7 @@ it('custom headers are only applied to the next request', function () {
 
     // Verificar que solo el primer request tiene el header
     $itemsRequests = collect(Http::recorded())
-        ->filter(fn($record) => str_contains($record[0]->url(), 'Items'))
+        ->filter(fn ($record) => str_contains($record[0]->url(), 'Items'))
         ->values();
 
     expect($itemsRequests)->toHaveCount(2);
@@ -207,7 +207,7 @@ it('custom headers are only applied to the next request', function () {
 });
 
 it('can logout and clear the session', function () {
-    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
 
     $client = new SapB1Client;
     expect(Cache::has($sessionKey))->toBeTrue();
@@ -344,7 +344,7 @@ it('pool supports all http methods', function () {
 });
 
 it('uses distinct sessions for different indices', function () {
-    $baseKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager');
+    $baseKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager');
 
     // Client 1 (Index 0)
     $client1 = new SapB1Client([], 0);

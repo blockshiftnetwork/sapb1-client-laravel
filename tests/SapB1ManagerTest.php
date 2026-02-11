@@ -79,7 +79,7 @@ it('throws InvalidArgumentException for undefined connections', function () {
     managerHttpFakes();
     $manager = app(SapB1Manager::class);
 
-    expect(fn() => $manager->connection('nonexistent'))
+    expect(fn () => $manager->connection('nonexistent'))
         ->toThrow(InvalidArgumentException::class, 'SAP B1 connection [nonexistent] not configured.');
 });
 
@@ -136,8 +136,8 @@ it('uses different session cache keys for different connections', function () {
     $manager->connection('service_layer');
     $manager->connection('gateway');
 
-    $slKey = 'sapb1-session:' . md5('https://sap-services/b1s/v1/SBO_PRODmanager') . ':0';
-    $gwKey = 'sapb1-session:' . md5('https://sap-gateway/rs/v1/SBO_PRODmanager') . ':0';
+    $slKey = 'sapb1-session:'.md5('https://sap-services/b1s/v1/SBO_PRODmanager').':0';
+    $gwKey = 'sapb1-session:'.md5('https://sap-gateway/rs/v1/SBO_PRODmanager').':0';
 
     expect(Cache::has($slKey))->toBeTrue();
     expect(Cache::has($gwKey))->toBeTrue();
