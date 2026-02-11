@@ -1,6 +1,5 @@
 <?php
 
-use BlockshiftNetwork\SapB1Client\SapB1Client;
 use BlockshiftNetwork\SapB1Client\SapB1Manager;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -41,7 +40,7 @@ it('registers sap b1 manager as singleton', function () {
     expect($client1)->toBe($client2);
 
     $loginCount = collect(Http::recorded())
-        ->filter(fn($record) => str_contains($record[0]->url(), 'Login'))
+        ->filter(fn ($record) => str_contains($record[0]->url(), 'Login'))
         ->count();
 
     expect($loginCount)->toBe(1);
@@ -87,7 +86,7 @@ it('http macro respects per-call configuration overrides', function () {
         return str_contains($request->url(), 'custom-server');
     });
 
-    $sessionKey = 'sapb1-session:' . md5('https://custom-server/b1s/v1/CUSTOM_DBcustom_user') . ':0';
+    $sessionKey = 'sapb1-session:'.md5('https://custom-server/b1s/v1/CUSTOM_DBcustom_user').':0';
 
     expect(Cache::has($sessionKey))->toBeTrue();
 });

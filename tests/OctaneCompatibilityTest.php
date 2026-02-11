@@ -73,7 +73,7 @@ it('automatically renews session on 403 forbidden response', function () {
 
 it('clears cached session when forcing new login', function () {
     // Assuming index 0 by default
-    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
 
     Cache::flush();
 
@@ -214,7 +214,7 @@ it('stores and sends ROUTEID cookie for sticky sessions', function () {
     $client->get('Items');
 
     // Verify session cache contains both B1SESSION and ROUTEID
-    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
     $cachedCookie = Cache::get($sessionKey);
 
     expect($cachedCookie)->toContain('B1SESSION=sticky_session');
@@ -250,7 +250,7 @@ it('singleton does not cache expired sessions across requests', function () {
     $response1 = $client->get('Items');
     expect($response1->successful())->toBeTrue();
 
-    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
+    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
     $cachedCookie = Cache::get($sessionKey);
     expect($cachedCookie)->not->toBeNull()->toContain('cookie1');
 

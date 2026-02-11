@@ -96,12 +96,12 @@ class SapB1Client
     {
         // Remove trailing slash if present, then add it back
         // This ensures we always have exactly one trailing slash
-        return rtrim($server, '/') . '/';
+        return rtrim($server, '/').'/';
     }
 
     protected function getSessionKey(): string
     {
-        $baseKey = 'sapb1-session:' . md5($this->config['server'] . $this->config['database'] . $this->config['username']);
+        $baseKey = 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
 
         // Append index to support multiple sessions in the pool
         return "{$baseKey}:{$this->sessionIndex}";
@@ -147,7 +147,7 @@ class SapB1Client
             ]);
 
         if ($response->failed()) {
-            throw new Exception("SAP B1 Login Failed (Index: {$this->sessionIndex}): " . $response->body());
+            throw new Exception("SAP B1 Login Failed (Index: {$this->sessionIndex}): ".$response->body());
         }
 
         // Get cookies from response
@@ -160,7 +160,7 @@ class SapB1Client
 
         // Simple reconstruction for the header
         foreach ($cookies as $cookie) {
-            $cookieParts[] = $cookie->getName() . '=' . $cookie->getValue();
+            $cookieParts[] = $cookie->getName().'='.$cookie->getValue();
         }
 
         $this->sessionCookie = implode('; ', $cookieParts);

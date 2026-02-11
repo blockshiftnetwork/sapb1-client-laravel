@@ -31,7 +31,7 @@ class SapB1Query extends ODataQuery
      */
     public function find(string|int $key): Response
     {
-        $endpoint = $this->entity . '(' . $this->formatKey($key) . ')';
+        $endpoint = $this->entity.'('.$this->formatKey($key).')';
 
         // Apply $select if specified, ignore filters/ordering/pagination
         $params = [];
@@ -65,13 +65,13 @@ class SapB1Query extends ODataQuery
      * Usage: SapB1::query('Orders')->update(123, ['Comments' => 'Updated'])
      *        SapB1::query('Orders')->update(123, ['DocumentLines' => [...]], replaceCollections: true)
      *
-     * @param  string|int  $key   The primary key value.
+     * @param  string|int  $key  The primary key value.
      * @param  array<string, mixed>  $data  The fields to update.
      * @param  bool  $replaceCollections  Send B1S-ReplaceCollectionsOnPatch header.
      */
     public function update(string|int $key, array $data, bool $replaceCollections = false): Response
     {
-        $endpoint = $this->entity . '(' . $this->formatKey($key) . ')';
+        $endpoint = $this->entity.'('.$this->formatKey($key).')';
 
         if ($replaceCollections) {
             $this->client->withHeaders(['B1S-ReplaceCollectionsOnPatch' => 'true']);
@@ -90,7 +90,7 @@ class SapB1Query extends ODataQuery
      */
     public function delete(string|int $key): Response
     {
-        $endpoint = $this->entity . '(' . $this->formatKey($key) . ')';
+        $endpoint = $this->entity.'('.$this->formatKey($key).')';
 
         return $this->client->delete($endpoint);
     }
