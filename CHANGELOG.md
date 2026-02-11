@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.2 - 2026-02-11
+
+- Add support for case insensitive GET requests, and improve to be fluent api.
+  **Full Changelog**: https://github.com/blockshiftnetwork/sapb1-client-laravel/compare/v0.2.1...v0.2.2
+
 ## v0.2.1 - 2026-02-11
 
 - Implement driver system due to differences on how SAP B1 Gateway login/logout endpoint works
