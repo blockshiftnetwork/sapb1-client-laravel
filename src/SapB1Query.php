@@ -6,10 +6,44 @@ use Illuminate\Http\Client\Response;
 
 class SapB1Query extends ODataQuery
 {
+    protected bool $caseInsensitive = false;
+
+    protected bool $replaceCollections = false;
+
     public function __construct(
         protected SapB1Client $client,
         protected string $entity,
     ) {}
+
+    /**
+     * Enable case-insensitive filtering for the next GET request.
+     *
+     * Sends the "B1S-CaseInsensitive: true" header to SAP B1 Service Layer.
+     *
+     * Usage: SapB1::query('Items')->where('ItemName', 'contains', 'widget')->caseInsensitive()->get()
+     */
+    public function caseInsensitive(bool $enabled = true): self
+    {
+        $this->caseInsensitive = $enabled;
+
+        return $this;
+    }
+
+    /**
+     * Enable replace-collections mode for the next PATCH (update) request.
+     *
+     * Sends the "B1S-ReplaceCollectionsOnPatch: true" header, which tells SAP B1
+     * to replace collection properties (e.g. DocumentLines) instead of merging them.
+     * This is required when you need to remove or reorder lines.
+     *
+     * Usage: SapB1::query('Orders')->replaceCollections()->update(123, ['DocumentLines' => [...]])
+     */
+    public function replaceCollections(bool $enabled = true): self
+    {
+        $this->replaceCollections = $enabled;
+
+        return $this;
+    }
 
     /**
      * Execute the OData query and return the response (GET with filters).
@@ -18,6 +52,10 @@ class SapB1Query extends ODataQuery
      */
     public function get(): Response
     {
+        if ($this->caseInsensitive) {
+            $this->client->withHeaders(['B1S-CaseInsensitive' => 'true']);
+        }
+
         return $this->client->odataQuery($this->entity, $this);
     }
 
@@ -33,11 +71,18 @@ class SapB1Query extends ODataQuery
     {
         $endpoint = $this->entity.'('.$this->formatKey($key).')';
 
-        // Apply $select if specified, ignore filters/ordering/pagination
+        // Apply $select and $expand if specified, ignore filters/ordering/pagination
         $params = [];
         $array = $this->toArray();
         if (isset($array['$select'])) {
             $params['$select'] = $array['$select'];
+        }
+        if (isset($array['$expand'])) {
+            $params['$expand'] = $array['$expand'];
+        }
+
+        if ($this->caseInsensitive) {
+            $this->client->withHeaders(['B1S-CaseInsensitive' => 'true']);
         }
 
         return $this->client->get($endpoint, $params);
@@ -58,22 +103,17 @@ class SapB1Query extends ODataQuery
     /**
      * Update an existing record by its primary key (PATCH).
      *
-     * When $replaceCollections is true, the header "B1S-ReplaceCollectionsOnPatch: true"
-     * is sent, which tells SAP B1 to replace collection properties (e.g. DocumentLines)
-     * instead of merging them. This is required when you need to remove or reorder lines.
-     *
      * Usage: SapB1::query('Orders')->update(123, ['Comments' => 'Updated'])
-     *        SapB1::query('Orders')->update(123, ['DocumentLines' => [...]], replaceCollections: true)
+     *        SapB1::query('Orders')->replaceCollections()->update(123, ['DocumentLines' => [...]])
      *
      * @param  string|int  $key  The primary key value.
      * @param  array<string, mixed>  $data  The fields to update.
-     * @param  bool  $replaceCollections  Send B1S-ReplaceCollectionsOnPatch header.
      */
-    public function update(string|int $key, array $data, bool $replaceCollections = false): Response
+    public function update(string|int $key, array $data): Response
     {
         $endpoint = $this->entity.'('.$this->formatKey($key).')';
 
-        if ($replaceCollections) {
+        if ($this->replaceCollections) {
             $this->client->withHeaders(['B1S-ReplaceCollectionsOnPatch' => 'true']);
         }
 

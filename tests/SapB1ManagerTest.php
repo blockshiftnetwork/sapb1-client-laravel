@@ -408,11 +408,11 @@ it('query update sends replace collections header when enabled', function () {
         return Http::response('Not Found', 404);
     });
 
-    SapB1::query('Orders')->update(123, [
+    SapB1::query('Orders')->replaceCollections()->update(123, [
         'DocumentLines' => [
             ['ItemCode' => 'A001', 'Quantity' => 5],
         ],
-    ], replaceCollections: true);
+    ]);
 
     Http::assertSent(function ($request) {
         if (str_contains($request->url(), 'Orders(123)') && $request->method() === 'PATCH') {

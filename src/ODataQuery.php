@@ -22,6 +22,9 @@ class ODataQuery
     /** @var array<int, string> */
     private array $select = [];
 
+    /** @var array<int, string> */
+    private array $expand = [];
+
     /** @var array<int, Filter> */
     private array $filter = [];
 
@@ -38,6 +41,16 @@ class ODataQuery
     public function select(string|array ...$fields): self
     {
         $this->select = is_array($fields[0] ?? null) ? $fields[0] : $fields;
+
+        return $this;
+    }
+
+    /**
+     * @param  string|array<int, string>  ...$properties
+     */
+    public function expand(string|array ...$properties): self
+    {
+        $this->expand = is_array($properties[0] ?? null) ? $properties[0] : $properties;
 
         return $this;
     }
@@ -171,6 +184,9 @@ class ODataQuery
         $query = [];
         if (! empty($this->select)) {
             $query['$select'] = implode(',', $this->select);
+        }
+        if (! empty($this->expand)) {
+            $query['$expand'] = implode(',', $this->expand);
         }
         if (! empty($this->filter)) {
             $query['$filter'] = $this->compileFilters();

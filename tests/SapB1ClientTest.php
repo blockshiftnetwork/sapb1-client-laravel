@@ -422,3 +422,208 @@ it('handles server url with trailing slash correctly', function () {
         return ! str_contains($url, 'b1s/v1//');
     });
 });
+
+it('odata query supports $expand', function () {
+    $query = (new ODataQuery)
+        ->select('DocEntry', 'DocNum')
+        ->expand('DocumentLines')
+        ->top(5);
+
+    $result = $query->toArray();
+
+    expect($result)->toHaveKey('$expand', 'DocumentLines');
+    expect($result)->toHaveKey('$select', 'DocEntry,DocNum');
+    expect($result)->toHaveKey('$top', 5);
+});
+
+it('odata query supports multiple $expand properties', function () {
+    $query = (new ODataQuery)
+        ->expand('DocumentLines', 'BusinessPartner');
+
+    $result = $query->toArray();
+
+    expect($result)->toHaveKey('$expand', 'DocumentLines,BusinessPartner');
+});
+
+it('fluent query builder supports $expand via get', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        if (str_contains($request->url(), 'Orders')) {
+            return Http::response(['value' => [['DocEntry' => 1, 'DocumentLines' => []]]], 200);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    Cache::flush();
+    $client = new SapB1Client;
+    $client->query('Orders')->expand('DocumentLines')->get();
+
+    Http::assertSent(function ($request) {
+        if (str_contains($request->url(), 'Orders')) {
+            $url = $request->url();
+
+            return str_contains($url, '%24expand=DocumentLines') || str_contains($url, '$expand=DocumentLines');
+        }
+
+        return true;
+    });
+});
+
+it('fluent query builder supports $expand via find', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        if (str_contains($request->url(), 'Orders')) {
+            return Http::response(['DocEntry' => 123, 'DocumentLines' => []], 200);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    Cache::flush();
+    $client = new SapB1Client;
+    $client->query('Orders')->expand('DocumentLines')->find(123);
+
+    Http::assertSent(function ($request) {
+        if (str_contains($request->url(), 'Orders(123)')) {
+            $url = $request->url();
+
+            return str_contains($url, '%24expand=DocumentLines') || str_contains($url, '$expand=DocumentLines');
+        }
+
+        return true;
+    });
+});
+
+it('caseInsensitive sends B1S-CaseInsensitive header on get', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        if (str_contains($request->url(), 'Items')) {
+            return Http::response(['value' => []], 200);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    Cache::flush();
+    $client = new SapB1Client;
+    $client->query('Items')->where('ItemName', 'contains', 'widget')->caseInsensitive()->get();
+
+    Http::assertSent(function ($request) {
+        if (str_contains($request->url(), 'Items')) {
+            return $request->hasHeader('B1S-CaseInsensitive', 'true');
+        }
+
+        return true;
+    });
+});
+
+it('caseInsensitive sends B1S-CaseInsensitive header on find', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        if (str_contains($request->url(), 'Items')) {
+            return Http::response(['ItemCode' => 'A001', 'ItemName' => 'Widget'], 200);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    Cache::flush();
+    $client = new SapB1Client;
+    $client->query('Items')->caseInsensitive()->find('A001');
+
+    Http::assertSent(function ($request) {
+        if (str_contains($request->url(), "Items('A001')")) {
+            return $request->hasHeader('B1S-CaseInsensitive', 'true');
+        }
+
+        return true;
+    });
+});
+
+it('does not send B1S-CaseInsensitive header when not enabled', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        if (str_contains($request->url(), 'Items')) {
+            return Http::response(['value' => []], 200);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    Cache::flush();
+    $client = new SapB1Client;
+    $client->query('Items')->where('ItemName', 'contains', 'widget')->get();
+
+    Http::assertSent(function ($request) {
+        if (str_contains($request->url(), 'Items')) {
+            return ! $request->hasHeader('B1S-CaseInsensitive');
+        }
+
+        return true;
+    });
+});
+
+it('replaceCollections fluent method sends header on update', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        if (str_contains($request->url(), 'Orders') && $request->method() === 'PATCH') {
+            return Http::response(null, 204);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    Cache::flush();
+    $client = new SapB1Client;
+    $client->query('Orders')->replaceCollections()->update(123, [
+        'DocumentLines' => [
+            ['ItemCode' => 'A001', 'Quantity' => 5],
+        ],
+    ]);
+
+    Http::assertSent(function ($request) {
+        if (str_contains($request->url(), 'Orders(123)') && $request->method() === 'PATCH') {
+            return $request->hasHeader('B1S-ReplaceCollectionsOnPatch', 'true');
+        }
+
+        return true;
+    });
+});
+
+it('update does not send replace collections header by default', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        if (str_contains($request->url(), 'Orders') && $request->method() === 'PATCH') {
+            return Http::response(null, 204);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    Cache::flush();
+    $client = new SapB1Client;
+    $client->query('Orders')->update(123, ['Comments' => 'Simple update']);
+
+    Http::assertSent(function ($request) {
+        if (str_contains($request->url(), 'Orders(123)') && $request->method() === 'PATCH') {
+            return ! $request->hasHeader('B1S-ReplaceCollectionsOnPatch');
+        }
+
+        return true;
+    });
+});
