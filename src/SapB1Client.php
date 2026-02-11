@@ -26,7 +26,21 @@ class SapB1Client
 
     public function __construct(#[SensitiveParameter] array $config = [], ?int $sessionIndex = null)
     {
-        $this->config = array_merge(config('sapb1-client', []), $config);
+        // Resolve config: explicit config takes priority, then try global config
+        if (! empty($config)) {
+            $this->config = $config;
+        } else {
+            $globalConfig = config('sapb1-client', []);
+
+            // Support new multi-connection format
+            if (isset($globalConfig['connections'])) {
+                $default = $globalConfig['default'] ?? array_key_first($globalConfig['connections']);
+                $this->config = $globalConfig['connections'][$default] ?? [];
+            } else {
+                // Legacy flat config format
+                $this->config = $globalConfig;
+            }
+        }
 
         // Set session index (Priority: Constructor -> Config -> Default 0)
         if ($sessionIndex !== null) {
@@ -82,12 +96,12 @@ class SapB1Client
     {
         // Remove trailing slash if present, then add it back
         // This ensures we always have exactly one trailing slash
-        return rtrim($server, '/').'/';
+        return rtrim($server, '/') . '/';
     }
 
     protected function getSessionKey(): string
     {
-        $baseKey = 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
+        $baseKey = 'sapb1-session:' . md5($this->config['server'] . $this->config['database'] . $this->config['username']);
 
         // Append index to support multiple sessions in the pool
         return "{$baseKey}:{$this->sessionIndex}";
@@ -133,7 +147,7 @@ class SapB1Client
             ]);
 
         if ($response->failed()) {
-            throw new Exception("SAP B1 Login Failed (Index: {$this->sessionIndex}): ".$response->body());
+            throw new Exception("SAP B1 Login Failed (Index: {$this->sessionIndex}): " . $response->body());
         }
 
         // Get cookies from response
@@ -146,13 +160,13 @@ class SapB1Client
 
         // Simple reconstruction for the header
         foreach ($cookies as $cookie) {
-            $cookieParts[] = $cookie->getName().'='.$cookie->getValue();
+            $cookieParts[] = $cookie->getName() . '=' . $cookie->getValue();
         }
 
         $this->sessionCookie = implode('; ', $cookieParts);
 
         $sessionKey = $this->getSessionKey();
-        Cache::put($sessionKey, $this->sessionCookie, $this->config['cache_ttl']);
+        Cache::put($sessionKey, $this->sessionCookie, $this->config['cache_ttl'] ?? 1800);
     }
 
     /**
@@ -201,7 +215,7 @@ class SapB1Client
         // Create a new instance to avoid header accumulation
         $request = Http::withOptions([
             'base_uri' => $server,
-            'verify' => $this->config['verify_ssl'],
+            'verify' => $this->config['verify_ssl'] ?? true,
         ])->withHeaders(array_merge(
             [
                 'Accept' => 'application/json',
@@ -273,6 +287,16 @@ class SapB1Client
         }
 
         return $this->get($entity, $options);
+    }
+
+    /**
+     * Create a fluent OData query builder for the given entity.
+     *
+     * Usage: $client->query('BusinessPartners')->select('CardCode')->where('CardType', 'cCustomer')->get()
+     */
+    public function query(string $entity): SapB1Query
+    {
+        return new SapB1Query($this, $entity);
     }
 
     public function sendRequestWithCallback(callable $callback): Response
