@@ -2,17 +2,25 @@
 
 use BlockshiftNetwork\SapB1Client\Facades\SapB1;
 use BlockshiftNetwork\SapB1Client\SapB1Client;
+use BlockshiftNetwork\SapB1Client\SapB1Manager;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
-    config()->set('sapb1-client.server', 'https://sap-server/b1s/v1/');
-    config()->set('sapb1-client.database', 'SBO_PROD');
-    config()->set('sapb1-client.username', 'manager');
-    config()->set('sapb1-client.password', 'password');
-    config()->set('sapb1-client.cache_ttl', 1800);
-    config()->set('sapb1-client.verify_ssl', false);
-    config()->set('sapb1-client.pool_size', 1);
+    config()->set('sapb1-client', [
+        'default' => 'service_layer',
+        'connections' => [
+            'service_layer' => [
+                'server' => 'https://sap-server/b1s/v1/',
+                'database' => 'SBO_PROD',
+                'username' => 'manager',
+                'password' => 'password',
+                'cache_ttl' => 1800,
+                'pool_size' => 1,
+                'verify_ssl' => false,
+            ],
+        ],
+    ]);
 });
 
 it('automatically renews session on 401 unauthorized response', function () {
@@ -65,7 +73,7 @@ it('automatically renews session on 403 forbidden response', function () {
 
 it('clears cached session when forcing new login', function () {
     // Assuming index 0 by default
-    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
+    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
 
     Cache::flush();
 
@@ -120,20 +128,24 @@ it('works correctly with singleton binding for octane compatibility', function (
         '*' => Http::response('Not Found', 404),
     ]);
 
-    // First request - get singleton instance
-    $client1 = app(SapB1Client::class);
+    // Manager is a singleton - get the same instance each time
+    $manager1 = app(SapB1Manager::class);
+    $client1 = $manager1->connection('service_layer');
     $response1 = $client1->get('Items');
 
-    // Second request within same Octane worker - should get same singleton instance
-    $client2 = app(SapB1Client::class);
-    expect($client1)->toBe($client2); // Same instance
+    // Second request within same Octane worker - should get same manager and client
+    $manager2 = app(SapB1Manager::class);
+    expect($manager1)->toBe($manager2); // Same manager instance
+
+    $client2 = $manager2->connection('service_layer');
+    expect($client1)->toBe($client2); // Same client instance (cached)
 
     // Reset request state to simulate new request
-    $client2->resetForNewRequest();
+    $manager2->resetAllForNewRequest();
 
     // Third request - same instance but with reset state
-    $client3 = app(SapB1Client::class);
-    expect($client3)->toBe($client1); // Still same singleton instance
+    $client3 = app(SapB1Manager::class)->connection('service_layer');
+    expect($client3)->toBe($client1); // Still same cached client instance
 
     // Make a request to verify functionality after reset
     $response2 = $client3->get('Items');
@@ -149,14 +161,15 @@ it('resets request-specific state on each octane request', function () {
         '*' => Http::response('Not Found', 404),
     ]);
 
-    $client = app(SapB1Client::class);
+    $manager = app(SapB1Manager::class);
+    $client = $manager->connection('service_layer');
 
     // Make first request
     $response = $client->get('Items');
     expect($response->successful())->toBeTrue();
 
-    // Simulate new request
-    $client->resetForNewRequest();
+    // Simulate new request via manager (as Octane listener does)
+    $manager->resetAllForNewRequest();
 
     // Make another request - should work fine with clean state
     $response2 = $client->get('Items');
@@ -201,7 +214,7 @@ it('stores and sends ROUTEID cookie for sticky sessions', function () {
     $client->get('Items');
 
     // Verify session cache contains both B1SESSION and ROUTEID
-    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
+    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
     $cachedCookie = Cache::get($sessionKey);
 
     expect($cachedCookie)->toContain('B1SESSION=sticky_session');
@@ -230,21 +243,22 @@ it('singleton does not cache expired sessions across requests', function () {
         '*' => Http::response('Not Found', 404),
     ]);
 
-    $client = app(SapB1Client::class);
+    $manager = app(SapB1Manager::class);
+    $client = $manager->connection('service_layer');
 
     // First request - gets session1
     $response1 = $client->get('Items');
     expect($response1->successful())->toBeTrue();
 
-    $sessionKey = 'sapb1-session:'.md5('https://sap-server/b1s/v1/SBO_PRODmanager').':0';
+    $sessionKey = 'sapb1-session:' . md5('https://sap-server/b1s/v1/SBO_PRODmanager') . ':0';
     $cachedCookie = Cache::get($sessionKey);
     expect($cachedCookie)->not->toBeNull()->toContain('cookie1');
 
     // Simulate cache expiration (session expired in SAP)
     Cache::forget($sessionKey);
 
-    // Simulate new request
-    $client->resetForNewRequest();
+    // Simulate new request via manager
+    $manager->resetAllForNewRequest();
 
     // Second request - should get new session because cache is empty
     $response2 = $client->get('Items');
