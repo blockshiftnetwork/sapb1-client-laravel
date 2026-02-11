@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.2.0 - 2026-02-11
+
+### What's Changed
+
+* Implement Connection Manager Pattern with Fluent Query Builder by @AlexR1712 in https://github.com/blockshiftnetwork/sapb1-client-laravel/pull/6
+
+### New Contributors
+
+* @AlexR1712 made their first contribution in https://github.com/blockshiftnetwork/sapb1-client-laravel/pull/6
+
+**Full Changelog**: https://github.com/blockshiftnetwork/sapb1-client-laravel/compare/v0.1.2...v0.2.0
+
 ## v0.1.2 - 2026-02-05
 
 ### What's Changed
