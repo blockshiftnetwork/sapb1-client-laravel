@@ -11,16 +11,20 @@ use Illuminate\Support\Facades\Http;
  */
 function managerHttpFakes(): void
 {
+    $loginResponse = Http::response(
+        ['SessionId' => 'mock_session_id', 'Version' => '10.0'],
+        200,
+        ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']
+    );
+
     Http::fake([
-        '*Login*' => Http::response(
-            ['SessionId' => 'mock_session_id', 'Version' => '10.0'],
-            200,
-            ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']
-        ),
+        '*Login*' => $loginResponse,
+        '*/login' => $loginResponse,   // Gateway login endpoint (lowercase, host-root)
         '*Items*' => Http::response(['value' => [['ItemCode' => 'A001'], ['ItemCode' => 'A002']]], 200),
         '*BusinessPartners*' => Http::response(['value' => [['CardCode' => 'C001']]], 200),
         '*PDFExport*' => Http::response(['pdf' => 'base64data'], 200),
         '*Logout*' => Http::response(null, 204),
+        '*/logout' => Http::response(null, 204), // Gateway logout endpoint
         '*' => Http::response('Not Found', 404),
     ]);
 }
@@ -32,6 +36,7 @@ beforeEach(function () {
         'default' => 'service_layer',
         'connections' => [
             'service_layer' => [
+                'driver' => 'servicelayer',
                 'server' => 'https://sap-services/b1s/v1/',
                 'database' => 'SBO_PROD',
                 'username' => 'manager',
@@ -41,6 +46,7 @@ beforeEach(function () {
                 'verify_ssl' => false,
             ],
             'gateway' => [
+                'driver' => 'gateway',
                 'server' => 'https://sap-gateway/rs/v1/',
                 'database' => 'SBO_PROD',
                 'username' => 'manager',
@@ -79,7 +85,7 @@ it('throws InvalidArgumentException for undefined connections', function () {
     managerHttpFakes();
     $manager = app(SapB1Manager::class);
 
-    expect(fn () => $manager->connection('nonexistent'))
+    expect(fn() => $manager->connection('nonexistent'))
         ->toThrow(InvalidArgumentException::class, 'SAP B1 connection [nonexistent] not configured.');
 });
 
@@ -136,8 +142,8 @@ it('uses different session cache keys for different connections', function () {
     $manager->connection('service_layer');
     $manager->connection('gateway');
 
-    $slKey = 'sapb1-session:'.md5('https://sap-services/b1s/v1/SBO_PRODmanager').':0';
-    $gwKey = 'sapb1-session:'.md5('https://sap-gateway/rs/v1/SBO_PRODmanager').':0';
+    $slKey = 'sapb1-session:' . md5('https://sap-services/b1s/v1/SBO_PRODmanager') . ':0';
+    $gwKey = 'sapb1-session:' . md5('https://sap-gateway/rs/v1/SBO_PRODmanager') . ':0';
 
     expect(Cache::has($slKey))->toBeTrue();
     expect(Cache::has($gwKey))->toBeTrue();
@@ -442,7 +448,7 @@ it('query update does not send replace collections header by default', function 
 
 it('query crud works on named connections', function () {
     Http::fake(function ($request) {
-        if (str_contains($request->url(), 'Login')) {
+        if (str_contains($request->url(), 'Login') || str_contains($request->url(), 'login')) {
             return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
         }
         if (str_contains($request->url(), 'Items')) {
@@ -456,4 +462,177 @@ it('query crud works on named connections', function () {
 
     expect($response->successful())->toBeTrue();
     expect($response->json('ItemCode'))->toBe('A001');
+});
+
+// ──────────────────────────────────────────────────
+// Driver-specific tests
+// ──────────────────────────────────────────────────
+
+it('servicelayer driver posts login to relative Login endpoint', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    new SapB1Client([
+        'driver' => 'servicelayer',
+        'server' => 'https://sap-services/b1s/v1/',
+        'database' => 'SBO_PROD',
+        'username' => 'manager',
+        'password' => 'password',
+        'verify_ssl' => false,
+    ]);
+
+    Http::assertSent(function ($request) {
+        // Service Layer login should resolve to {server}/Login
+        return $request->method() === 'POST'
+            && str_contains($request->url(), 'b1s/v1/Login');
+    });
+});
+
+it('gateway driver posts login to absolute host-root /login endpoint', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), '/login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    new SapB1Client([
+        'driver' => 'gateway',
+        'server' => 'https://sap-gateway/rs/v1/',
+        'database' => 'SBO_PROD',
+        'username' => 'manager',
+        'password' => 'password',
+        'verify_ssl' => false,
+    ]);
+
+    Http::assertSent(function ($request) {
+        // Gateway login should be absolute: https://sap-gateway/login (NOT /rs/v1/Login)
+        return $request->method() === 'POST'
+            && $request->url() === 'https://sap-gateway/login';
+    });
+});
+
+it('gateway driver posts logout to absolute host-root /logout endpoint', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), '/login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        if (str_contains($request->url(), '/logout')) {
+            return Http::response(null, 204);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    $client = new SapB1Client([
+        'driver' => 'gateway',
+        'server' => 'https://sap-gateway/rs/v1/',
+        'database' => 'SBO_PROD',
+        'username' => 'manager',
+        'password' => 'password',
+        'verify_ssl' => false,
+    ]);
+
+    $client->logout();
+
+    Http::assertSent(function ($request) {
+        if (str_contains($request->url(), 'logout')) {
+            return $request->url() === 'https://sap-gateway/logout';
+        }
+
+        return true;
+    });
+});
+
+it('gateway driver preserves port in login url', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), '/login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    new SapB1Client([
+        'driver' => 'gateway',
+        'server' => 'https://sap-gateway:50000/rs/v1/',
+        'database' => 'SBO_PROD',
+        'username' => 'manager',
+        'password' => 'password',
+        'verify_ssl' => false,
+    ]);
+
+    Http::assertSent(function ($request) {
+        return $request->method() === 'POST'
+            && $request->url() === 'https://sap-gateway:50000/login';
+    });
+});
+
+it('defaults to servicelayer driver when driver config is not set', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    // No 'driver' key in config — should default to servicelayer behavior
+    new SapB1Client([
+        'server' => 'https://sap-services/b1s/v1/',
+        'database' => 'SBO_PROD',
+        'username' => 'manager',
+        'password' => 'password',
+        'verify_ssl' => false,
+    ]);
+
+    Http::assertSent(function ($request) {
+        return $request->method() === 'POST'
+            && str_contains($request->url(), 'b1s/v1/Login');
+    });
+});
+
+it('throws exception for invalid driver value', function () {
+    Http::fake();
+
+    expect(fn() => new SapB1Client([
+        'driver' => 'invalid_driver',
+        'server' => 'https://sap-services/b1s/v1/',
+        'database' => 'SBO_PROD',
+        'username' => 'manager',
+        'password' => 'password',
+        'verify_ssl' => false,
+    ]))->toThrow(InvalidArgumentException::class, 'Invalid driver [invalid_driver]');
+});
+
+it('manager resolves gateway connection with correct driver login', function () {
+    Http::fake(function ($request) {
+        if (str_contains($request->url(), '/login') || str_contains($request->url(), 'Login')) {
+            return Http::response(['SessionId' => 'mock_session_id'], 200, ['Set-Cookie' => 'B1SESSION=mock_session_cookie;']);
+        }
+        if (str_contains($request->url(), 'Items')) {
+            return Http::response(['value' => [['ItemCode' => 'A001']]], 200);
+        }
+
+        return Http::response('Not Found', 404);
+    });
+
+    $response = SapB1::gateway()->get('Items');
+
+    expect($response->successful())->toBeTrue();
+
+    // Verify the gateway login was called at the host root
+    Http::assertSent(function ($request) {
+        if ($request->method() === 'POST' && str_contains($request->url(), 'login')) {
+            return $request->url() === 'https://sap-gateway/login';
+        }
+
+        return true;
+    });
 });

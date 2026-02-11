@@ -86,6 +86,65 @@ class SapB1Client
                 throw new \InvalidArgumentException("Missing required configuration: {$key}");
             }
         }
+
+        $driver = $this->getDriver();
+        if (! in_array($driver, ['servicelayer', 'gateway'])) {
+            throw new \InvalidArgumentException("Invalid driver [{$driver}]. Supported drivers: servicelayer, gateway.");
+        }
+    }
+
+    /**
+     * Get the driver type for this connection.
+     *
+     * @return string "servicelayer" or "gateway"
+     */
+    protected function getDriver(): string
+    {
+        return $this->config['driver'] ?? 'servicelayer';
+    }
+
+    /**
+     * Resolve the login endpoint based on the configured driver.
+     *
+     * Service Layer uses a relative path: Login (resolved against base_uri)
+     * Gateway uses an absolute URL: {scheme}://{host}/login (at the host root)
+     */
+    protected function getLoginEndpoint(): string
+    {
+        return match ($this->getDriver()) {
+            'gateway' => $this->buildHostRootUrl('/login'),
+            default => 'Login',
+        };
+    }
+
+    /**
+     * Resolve the logout endpoint based on the configured driver.
+     *
+     * Service Layer uses a relative path: Logout (resolved against base_uri)
+     * Gateway uses an absolute URL: {scheme}://{host}/logout (at the host root)
+     */
+    protected function getLogoutEndpoint(): string
+    {
+        return match ($this->getDriver()) {
+            'gateway' => $this->buildHostRootUrl('/logout'),
+            default => 'Logout',
+        };
+    }
+
+    /**
+     * Build an absolute URL at the host root from the configured server URL.
+     *
+     * Given server "https://example.com:50000/rs/v1" and path "/login",
+     * returns "https://example.com:50000/login".
+     */
+    protected function buildHostRootUrl(string $path): string
+    {
+        $parsed = parse_url($this->config['server']);
+        $scheme = $parsed['scheme'] ?? 'https';
+        $host = $parsed['host'] ?? '';
+        $port = isset($parsed['port']) ? ":{$parsed['port']}" : '';
+
+        return "{$scheme}://{$host}{$port}{$path}";
     }
 
     /**
@@ -96,12 +155,12 @@ class SapB1Client
     {
         // Remove trailing slash if present, then add it back
         // This ensures we always have exactly one trailing slash
-        return rtrim($server, '/').'/';
+        return rtrim($server, '/') . '/';
     }
 
     protected function getSessionKey(): string
     {
-        $baseKey = 'sapb1-session:'.md5($this->config['server'].$this->config['database'].$this->config['username']);
+        $baseKey = 'sapb1-session:' . md5($this->config['server'] . $this->config['database'] . $this->config['username']);
 
         // Append index to support multiple sessions in the pool
         return "{$baseKey}:{$this->sessionIndex}";
@@ -138,16 +197,18 @@ class SapB1Client
      */
     protected function performLogin(): void
     {
+        $loginEndpoint = $this->getLoginEndpoint();
+
         // Avoid infinite retry loops if login itself fails
         $response = $this->http->retry(3, 100)
-            ->post('Login', [
+            ->post($loginEndpoint, [
                 'CompanyDB' => $this->config['database'],
                 'UserName' => $this->config['username'],
                 'Password' => $this->config['password'],
             ]);
 
         if ($response->failed()) {
-            throw new Exception("SAP B1 Login Failed (Index: {$this->sessionIndex}): ".$response->body());
+            throw new Exception("SAP B1 Login Failed (Index: {$this->sessionIndex}): " . $response->body());
         }
 
         // Get cookies from response
@@ -160,7 +221,7 @@ class SapB1Client
 
         // Simple reconstruction for the header
         foreach ($cookies as $cookie) {
-            $cookieParts[] = $cookie->getName().'='.$cookie->getValue();
+            $cookieParts[] = $cookie->getName() . '=' . $cookie->getValue();
         }
 
         $this->sessionCookie = implode('; ', $cookieParts);
@@ -192,7 +253,8 @@ class SapB1Client
         $sessionKey = $this->getSessionKey();
 
         if (Cache::has($sessionKey)) {
-            $this->http->withHeaders(['Cookie' => $this->sessionCookie])->post('Logout');
+            $logoutEndpoint = $this->getLogoutEndpoint();
+            $this->http->withHeaders(['Cookie' => $this->sessionCookie])->post($logoutEndpoint);
             Cache::forget($sessionKey);
         }
     }

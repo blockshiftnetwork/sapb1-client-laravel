@@ -23,6 +23,11 @@ return [
     | maintain isolated sessions (cookies are not shared).
     |
     | Connection settings:
+    | - `driver`:     The driver type: "servicelayer" or "gateway" (default: "servicelayer").
+    |                 This determines the login/logout endpoint paths since the
+    |                 SAP Gateway uses different routes than the Service Layer:
+    |                   Service Layer: POST {server}/Login
+    |                   Gateway:       POST {host}/login (absolute, at host root)
     | - `server`:     The full URL to the SAP endpoint.
     | - `database`:   The name of the company database to connect to.
     | - `username`:   The username for authentication.
@@ -35,6 +40,7 @@ return [
     'connections' => [
 
         'service_layer' => [
+            'driver' => 'servicelayer',
             'server' => env('SAPB1_SERVICE_LAYER_SERVER', 'https://example-sap-host.com/b1s/v1'),
             'database' => env('SAPB1_SERVICE_LAYER_DATABASE'),
             'username' => env('SAPB1_SERVICE_LAYER_USERNAME'),
@@ -45,6 +51,7 @@ return [
         ],
 
         'gateway' => [
+            'driver' => 'gateway',
             'server' => env('SAPB1_GATEWAY_SERVER', 'https://example-sap-host.com/rs/v1'),
             'database' => env('SAPB1_GATEWAY_DATABASE'),
             'username' => env('SAPB1_GATEWAY_USERNAME'),
