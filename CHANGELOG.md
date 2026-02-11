@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.1 - 2026-02-11
+
+- Implement driver system due to differences on how SAP B1 Gateway login/logout endpoint works
+
+**Full Changelog**: https://github.com/blockshiftnetwork/sapb1-client-laravel/compare/v0.2.0...v0.2.1
+
 ## v0.2.0 - 2026-02-11
 
 ### What's Changed
