@@ -8,7 +8,7 @@ A robust, production-grade Laravel package for SAP Business One HTTP integration
 ## Requirements
 
 - PHP 8.3 or higher
-- Laravel 11.x or 12.x
+- Laravel 11.x, 12.x, or 13.x
 
 ## Installation
 
