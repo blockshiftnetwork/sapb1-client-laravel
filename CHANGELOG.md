@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.3 - 2026-03-23
+
+### What's Changed
+
+* Add support for Laravel 13 and Testbench 11 by @AlexR1712 in https://github.com/blockshiftnetwork/sapb1-client-laravel/pull/8
+
+**Full Changelog**: https://github.com/blockshiftnetwork/sapb1-client-laravel/compare/v0.2.2...v0.2.3
+
 ## v0.2.2 - 2026-02-11
 
 - Add support for case insensitive GET requests, and improve to be fluent api.
