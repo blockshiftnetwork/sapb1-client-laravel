@@ -348,7 +348,21 @@ class SapB1Client
             $options = $options->toArray();
         }
 
-        return $this->get($entity, $options);
+        // OData system query options use $ prefix (e.g. $filter, $apply).
+        // Guzzle's http_build_query() encodes $ as %24, which SAP B1
+        // Service Layer rejects for certain options like $apply.
+        // Build the query string manually to preserve the literal $.
+        if (! empty($options)) {
+            $queryParts = [];
+
+            foreach ($options as $key => $value) {
+                $queryParts[] = $key.'='.rawurlencode((string) $value);
+            }
+
+            $entity .= '?'.implode('&', $queryParts);
+        }
+
+        return $this->get($entity);
     }
 
     /**
