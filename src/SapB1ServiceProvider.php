@@ -4,6 +4,7 @@ namespace BlockshiftNetwork\SapB1Client;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Laravel\Octane\Events\RequestReceived;
 use Override;
 use SensitiveParameter;
 use Spatie\LaravelPackageTools\Package;
@@ -50,7 +51,7 @@ class SapB1ServiceProvider extends PackageServiceProvider
     protected function configureOctane(): void
     {
         if (class_exists('\Laravel\Octane\Events\RequestReceived')) {
-            Event::listen(\Laravel\Octane\Events\RequestReceived::class, function () {
+            Event::listen(RequestReceived::class, function () {
                 app(SapB1Manager::class)->resetAllForNewRequest();
             });
         }
