@@ -71,7 +71,7 @@ class SapB1Query extends ODataQuery
     {
         $endpoint = $this->entity.'('.$this->formatKey($key).')';
 
-        // Apply $select and $expand if specified, ignore filters/ordering/pagination
+        // Only $select and $expand apply to single-entity lookups
         $params = [];
         $array = $this->toArray();
         if (isset($array['$select'])) {
@@ -81,11 +81,13 @@ class SapB1Query extends ODataQuery
             $params['$expand'] = $array['$expand'];
         }
 
+        $endpoint .= ODataQuery::paramsToQueryString($params);
+
         if ($this->caseInsensitive) {
             $this->client->withHeaders(['B1S-CaseInsensitive' => 'true']);
         }
 
-        return $this->client->get($endpoint, $params);
+        return $this->client->get($endpoint);
     }
 
     /**

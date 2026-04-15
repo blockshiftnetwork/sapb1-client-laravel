@@ -302,7 +302,7 @@ it('query find respects select fields', function () {
 
     Http::assertSent(function ($request) {
         if (str_contains($request->url(), 'BusinessPartners') && ! str_contains($request->url(), 'Login')) {
-            return str_contains($request->url(), '%24select=CardCode%2CCardName')
+            return str_contains($request->url(), '$select=CardCode%2CCardName')
                 || str_contains($request->url(), '$select=CardCode,CardName');
         }
 

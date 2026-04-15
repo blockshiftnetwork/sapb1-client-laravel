@@ -465,7 +465,7 @@ it('fluent query builder supports $expand via get', function () {
         if (str_contains($request->url(), 'Orders')) {
             $url = $request->url();
 
-            return str_contains($url, '%24expand=DocumentLines') || str_contains($url, '$expand=DocumentLines');
+            return str_contains($url, '$expand=DocumentLines');
         }
 
         return true;
@@ -492,7 +492,7 @@ it('fluent query builder supports $expand via find', function () {
         if (str_contains($request->url(), 'Orders(123)')) {
             $url = $request->url();
 
-            return str_contains($url, '%24expand=DocumentLines') || str_contains($url, '$expand=DocumentLines');
+            return str_contains($url, '$expand=DocumentLines');
         }
 
         return true;

@@ -204,6 +204,70 @@ class ODataQuery
         return $query;
     }
 
+    /**
+     * Build a URL query string from this query's OData parameters.
+     *
+     * Unlike toArray(), this returns a ready-to-append query string (with
+     * leading ?) where $-prefixed OData keys are NOT percent-encoded.
+     * Values are encoded per RFC 3986.
+     */
+    public function toQueryString(): string
+    {
+        return self::paramsToQueryString($this->toArray());
+    }
+
+    /**
+     * Build a URL query string from an array of OData parameters.
+     *
+     * Keys are preserved verbatim so that $-prefixed OData system query
+     * options ($filter, $apply, etc.) are not percent-encoded.
+     * Values are encoded per RFC 3986.
+     *
+     * @param  array<string, string|int>  $params
+     */
+    public static function paramsToQueryString(array $params): string
+    {
+        if (empty($params)) {
+            return '';
+        }
+
+        return '?'.self::buildRawQueryString($params);
+    }
+
+    /**
+     * Append OData query parameters to a URL, using the correct separator.
+     *
+     * @param  array<string, string|int>  $params
+     */
+    public static function appendQueryParams(string $url, array $params): string
+    {
+        if (empty($params)) {
+            return $url;
+        }
+
+        $separator = str_contains($url, '?') ? '&' : '?';
+
+        return $url.$separator.self::buildRawQueryString($params);
+    }
+
+    /**
+     * Encode key=value pairs without encoding keys.
+     *
+     * PHP's http_build_query() percent-encodes $ to %24, which SAP B1
+     * Service Layer rejects in OData system query option keys.
+     *
+     * @param  array<string, string|int>  $params
+     */
+    private static function buildRawQueryString(array $params): string
+    {
+        $pairs = [];
+        foreach ($params as $key => $value) {
+            $pairs[] = $key.'='.rawurlencode((string) $value);
+        }
+
+        return implode('&', $pairs);
+    }
+
     private function compileFilters(): string
     {
         $filterString = '';
