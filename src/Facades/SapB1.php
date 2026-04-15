@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Facade;
 use Override;
 
 /**
- * @see \BlockshiftNetwork\SapB1Client\SapB1Manager
+ * @see SapB1Manager
  */
 class SapB1 extends Facade
 {

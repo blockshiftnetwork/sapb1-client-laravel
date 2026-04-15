@@ -289,9 +289,19 @@ class SapB1Client
 
         $this->headers = [];
 
+        // Bake GET query params into the URL so $-prefixed OData keys are
+        // not percent-encoded by Guzzle's http_build_query().
+        // The get() call below uses exactly one argument — passing a second
+        // arg (even []) causes Laravel to send ['query' => []] to Guzzle,
+        // which strips any query string already in the URL.
+        if ($method === 'get' && ! empty($data)) {
+            $endpoint = ODataQuery::appendQueryParams($endpoint, $data);
+            $data = [];
+        }
+
         // Support all HTTP methods
         $response = match ($method) {
-            'get' => $request->get($endpoint, $data),
+            'get' => $request->get($endpoint),
             'post' => $request->post($endpoint, $data),
             'put' => $request->put($endpoint, $data),
             'patch' => $request->patch($endpoint, $data),
@@ -344,11 +354,9 @@ class SapB1Client
 
     public function odataQuery(string $entity, array|ODataQuery $options = []): Response
     {
-        if ($options instanceof ODataQuery) {
-            $options = $options->toArray();
-        }
+        $params = $options instanceof ODataQuery ? $options->toArray() : $options;
 
-        return $this->get($entity, $options);
+        return $this->get($entity.ODataQuery::paramsToQueryString($params));
     }
 
     /**
@@ -436,6 +444,12 @@ class SapB1Client
 
                     // Clear key
                     $this->currentKey = null;
+
+                    // Bake GET query params into URL (same OData $ encoding fix as sendRequest)
+                    if (strtolower($method) === 'get' && isset($arguments[1]) && is_array($arguments[1]) && ! empty($arguments[1])) {
+                        $arguments[0] = ODataQuery::appendQueryParams($arguments[0], $arguments[1]);
+                        unset($arguments[1]);
+                    }
 
                     // Configure and execute method
                     return $this->configureRequest($base)->$method(...$arguments);

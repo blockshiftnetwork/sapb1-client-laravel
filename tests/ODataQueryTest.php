@@ -327,3 +327,62 @@ describe('ODataQuery - Method Chaining', function () {
         expect($result)->toHaveKey('$skip');
     });
 });
+
+// --------------------------------------------------------------------------
+// toQueryString() — unit tests for OData query string builder
+// --------------------------------------------------------------------------
+
+describe('toQueryString', function () {
+    it('returns empty string for empty query', function () {
+        expect((new ODataQuery)->toQueryString())->toBe('');
+    });
+
+    it('returns query string with ? prefix and literal $ keys', function () {
+        $query = (new ODataQuery)->select('CardCode')->top(5);
+
+        $result = $query->toQueryString();
+
+        expect($result)->toStartWith('?');
+        expect($result)->toContain('$select=CardCode');
+        expect($result)->toContain('$top=5');
+        expect($result)->not->toContain('%24');
+    });
+
+    it('encodes values but not keys', function () {
+        $query = (new ODataQuery)->where('Name', 'Widget & Gadget');
+
+        $result = $query->toQueryString();
+
+        expect($result)->toContain('$filter=');
+        expect($result)->toContain('%26'); // & in value is encoded
+        expect($result)->not->toContain('%24'); // $ in key is NOT encoded
+    });
+
+    it('is semantically equivalent to toArray', function () {
+        $query = (new ODataQuery)
+            ->select('DocEntry', 'DocNum')
+            ->where('CardCode', 'C001')
+            ->orderBy('DocEntry', 'desc')
+            ->top(10)
+            ->skip(5);
+
+        $queryString = $query->toQueryString();
+        $array = $query->toArray();
+
+        // Parse the query string back to an array and compare
+        parse_str(ltrim($queryString, '?'), $parsed);
+        expect($parsed)->toEqual($array);
+    });
+});
+
+describe('paramsToQueryString', function () {
+    it('returns empty string for empty array', function () {
+        expect(ODataQuery::paramsToQueryString([]))->toBe('');
+    });
+
+    it('builds query string from array with literal $ keys', function () {
+        $result = ODataQuery::paramsToQueryString(['$top' => 5, '$select' => 'ItemCode']);
+
+        expect($result)->toBe('?$top=5&$select=ItemCode');
+    });
+});
