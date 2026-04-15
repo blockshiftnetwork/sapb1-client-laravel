@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.2.4 - 2026-04-15
+
+### What's Changed
+
+* fix: preserve literal $ in OData query keys by @AlexR1712 in https://github.com/blockshiftnetwork/sapb1-client-laravel/pull/11
+
+**Full Changelog**: https://github.com/blockshiftnetwork/sapb1-client-laravel/compare/v0.2.3...v0.2.4
+
 ## v0.2.3 - 2026-03-23
 
 ### What's Changed
