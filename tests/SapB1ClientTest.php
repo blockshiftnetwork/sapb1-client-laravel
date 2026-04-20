@@ -21,6 +21,7 @@ beforeEach(function () {
             ->push(null, 204)
             ->push(null, 204),
         '*Logout*' => Http::response(null, 204),
+        '*Attachments2*' => Http::response(['AbsoluteEntry' => 42], 201),
         '*' => Http::response('Not Found', 404),
     ]);
 
@@ -271,6 +272,26 @@ it('facade can use sendRequestWithCallback', function () {
 
     expect($response->successful())->toBeTrue();
     expect($response->json())->toHaveKey('value');
+});
+
+it('sendRequestWithCallback supports multipart uploads without Content-Type collision', function () {
+    SapB1::sendRequestWithCallback(fn ($http) => $http
+        ->attach('files', 'hello world', 'hello.txt')
+        ->post('Attachments2'));
+
+    Http::assertSent(function ($request) {
+        if (! str_contains($request->url(), 'Attachments2')) {
+            return false;
+        }
+
+        $contentType = $request->header('Content-Type')[0] ?? '';
+
+        // Guzzle must be free to set multipart/form-data with its own boundary;
+        // a leftover "application/json" preset would silently break the upload.
+        return str_starts_with($contentType, 'multipart/form-data; boundary=')
+            && str_contains($request->body(), 'name="files"')
+            && str_contains($request->body(), 'filename="hello.txt"');
+    });
 });
 
 it('can use http macro SapB1', function () {
