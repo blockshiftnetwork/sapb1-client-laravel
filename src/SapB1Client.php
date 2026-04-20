@@ -66,7 +66,6 @@ class SapB1Client
             'verify' => $this->config['verify_ssl'] ?? true,
         ])->withHeaders([
             'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
         ]);
 
         $this->login();
@@ -281,7 +280,6 @@ class SapB1Client
         ])->withHeaders(array_merge(
             [
                 'Accept' => 'application/json',
-                'Content-Type' => 'application/json',
                 'Cookie' => $this->sessionCookie,
             ],
             $this->headers
@@ -423,7 +421,6 @@ class SapB1Client
                         ])
                         ->withHeaders([
                             'Accept' => 'application/json',
-                            'Content-Type' => 'application/json',
                             'Cookie' => $this->sessionCookie,
                         ]);
                 }
